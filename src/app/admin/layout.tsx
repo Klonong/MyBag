@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
-import { authService } from "@/services/auth.service";
 
 export default function AdminLayout({
   children,
@@ -13,7 +12,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, logout } = useAuth();
 
   useEffect(() => {
     if (!loading) {
@@ -24,7 +23,7 @@ export default function AdminLayout({
   }, [user, profile, loading, router]);
 
   async function handleLogout() {
-    await authService.signOut();
+    await logout();
     router.push("/login");
   }
 

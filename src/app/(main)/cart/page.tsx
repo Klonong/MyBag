@@ -13,7 +13,6 @@ import {
   Truck,
 } from "lucide-react";
 import { BasePageCenter, RightAsideLayout } from "@/components/base";
-import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -31,39 +30,12 @@ import { AuthRequiredDialog } from "@/components/ui/auth-required-dialog";
 import { formatPrice } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
-
-type CartItem = {
-  id: string;
-  name: string;
-  subtitle: string;
-  price: number;
-  originalPrice?: number;
-  quantity: number;
-  image: string;
-};
-
-const starterCart: CartItem[] = [
-  {
-    id: "1",
-    name: "THE ARTISAN CARRYALL",
-    subtitle: "Ebony / Natural Grain Leather",
-    price: 385,
-    originalPrice: 450,
-    quantity: 1,
-    image: products[0]?.image ?? "",
-  },
-  {
-    id: "2",
-    name: "TERRACOTTA SLING",
-    subtitle: "Limited Edition / Hand-woven",
-    price: 210,
-    quantity: 1,
-    image: products[1]?.image ?? "",
-  },
-];
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { increaseQty, decreaseQty, removeFromCart } from "@/store/cartSlice";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>(starterCart);
+  const items = useAppSelector((state) => state.cart.items);
+  const dispatch = useAppDispatch();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const { user } = useAuth();
 
@@ -72,27 +44,9 @@ export default function CartPage() {
     [items],
   );
 
-  const increaseQty = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
-      ),
-    );
-  };
-
-  const decreaseQty = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity - 1) }
-          : item,
-      ),
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  const increaseItemQty = (id: string) => dispatch(increaseQty(id));
+  const decreaseItemQty = (id: string) => dispatch(decreaseQty(id));
+  const removeItem = (id: string) => dispatch(removeFromCart(id));
 
   const router = useRouter();
 
@@ -236,7 +190,7 @@ export default function CartPage() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => decreaseQty(item.id)}
+                          onClick={() => decreaseItemQty(item.id)}
                           className="rounded-none h-full"
                         >
                           <Minus className="h-3.5 w-3.5" />
@@ -247,7 +201,7 @@ export default function CartPage() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => increaseQty(item.id)}
+                          onClick={() => increaseItemQty(item.id)}
                           className="rounded-none h-full"
                         >
                           <Plus className="h-3.5 w-3.5" />

@@ -1,7 +1,7 @@
 "use client";
 
+import { signIn } from "next-auth/react";
 import { useSignUp } from "@/hooks/useSignUp";
-import { authService } from "@/services/auth.service";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
@@ -94,9 +94,7 @@ export function CreateAccountForm() {
       </button>
 
       <Divider />
-      <SocialButtons
-        onOAuth={(p: "google" | "apple") => authService.signInWithOAuth(p)}
-      />
+      <SocialButtons onOAuth={(provider) => signIn(provider)} />
     </form>
   );
 }

@@ -89,30 +89,51 @@ src/
 │       ├── aside-layouts.tsx # LeftAsideLayout, RightAsideLayout
 │       └── index.tsx      # Styled-components exports
 │
-├── context/
-│   └── AuthProvider.tsx    # Supabase auth context
+├── store/                  # Redux Toolkit (client state)
+│   ├── index.ts             # configureStore (auth, cart, wishlist reducers)
+│   ├── hooks.ts             # typed useAppDispatch/useAppSelector
+│   ├── authSlice.ts         # mirrors the Auth.js session (user, status)
+│   ├── cartSlice.ts         # cart items + qty/add/remove actions
+│   ├── wishlistSlice.ts     # wishlisted product ids
+│   ├── SessionSync.tsx      # bridges next-auth useSession() -> authSlice
+│   └── StoreProvider.tsx    # <Provider> + <SessionProvider> wrapper (root layout)
 │
 ├── hooks/
-│   ├── useAuth.ts          # Auth context hook
-│   ├── useSignIn.ts        # Sign-in form logic
-│   └── useSignUp.ts        # Sign-up form logic
+│   ├── useAuth.ts          # Reads auth state from Redux; logout() calls next-auth signOut()
+│   ├── useSignIn.ts        # Sign-in form logic (next-auth signIn("credentials"))
+│   └── useSignUp.ts        # Sign-up form logic (POST /api/auth/register, then signIn)
 │
-├── services/
-│   └── auth.service.ts     # Supabase auth operations
+├── auth.ts                 # Re-exports handlers/auth/signIn/signOut from server/auth/config.ts
 │
-├── api/
-│   └── client.ts           # Supabase client initialization
+├── server/                 # BACKEND layer - Prisma + Auth.js config, imported only by
+│   │                       # route handlers / server actions / server components
+│   ├── db/
+│   │   └── prisma.ts       # Prisma client singleton (pg adapter)
+│   ├── auth/
+│   │   ├── config.ts       # NextAuth() config: Credentials + Google + Apple, jwt/session callbacks
+│   │   ├── password.ts     # bcrypt hash/verify (used by Credentials authorize + register route)
+│   │   └── guards.ts       # getCurrentUser/requireUser/requireAdmin (wraps auth())
+│   ├── products/
+│   │   └── product.service.ts # category/badge lookups, product creation
+│   └── uploads/
+│       └── upload.service.ts  # saves files to /public/uploads (admin only)
 │
 ├── lib/
 │   └── utils.ts            # cn() helper, formatPrice() for IDR currency
 │
 ├── types/
+│   ├── auth.ts              # AuthUser type shared by frontend + backend
+│   ├── next-auth.d.ts       # module augmentation (session.user.id/role/phone)
 │   ├── product.ts          # Product interface
 │   └── productVariant.ts   # ProductVariant interface
 │
 └── data/
     └── products.ts         # Mock product data (9 Indonesian artisan bags)
 ```
+
+Root also has `proxy.ts` (this Next.js version's replacement for `middleware.ts`) which does
+optimistic route protection for `/admin`, `/profile`, `/cart`, `/wishlist`, `/checkout` by reading
+the Auth.js JWT session cookie via `auth()` (no DB access at this layer).
 
 ---
 
@@ -142,27 +163,50 @@ src/
 
 ---
 
-## Supabase Integration
+## Authentication (Auth.js / NextAuth v5)
 
 ### Environment Variables Required
 Create `.env.local` with:
 ```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
+DIRECT_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
+AUTH_SECRET=a-long-random-secret
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
+AUTH_APPLE_ID=
+AUTH_APPLE_SECRET=
 ```
 
-### Auth Service (src/services/auth.service.ts)
-```typescript
-authService.signIn(email, password)
-authService.signUp(email, password, phone)
-authService.signInWithOAuth(provider: "google" | "apple")
-authService.signOut()
-```
+### Auth.js Config (src/server/auth/config.ts, re-exported from src/auth.ts)
+- `Credentials` provider: `authorize()` looks up `prisma.users` by email and verifies the
+  bcrypt `password_hash` (src/server/auth/password.ts).
+- `Google` / `Apple` providers: OAuth sign-in upserts a matching row in `prisma.users` by
+  email (via the `signIn` callback) so both flows share the same `users` table and `role` column.
+- `session: { strategy: "jwt" }` — the `jwt`/`session` callbacks copy `id`, `role`, and `phone`
+  from the DB onto the token/session so `session.user.role` is available everywhere.
+- Backend guards (src/server/auth/guards.ts): `getCurrentUser()`, `requireUser()`,
+  `requireAdmin()` — wrap `auth()` for use in Server Actions and Route Handlers.
+- `proxy.ts` (root) does optimistic redirects for `/admin`, `/profile`, `/cart`, `/wishlist`,
+  `/checkout` by reading the JWT session via `auth()` (no DB access at that layer).
 
-### Auth Provider Pattern
-- Wraps app in `AuthProvider` (client component)
-- Exposes `user` and `loading` state via React Context
-- Listens to `onAuthStateChange` for real-time updates
+### Auth API Routes
+```
+POST /api/auth/register        { email, password, name?, phone? } -> { ok }  (custom, hashes + creates user)
+GET/POST /api/auth/[...nextauth]  -> Auth.js: signin/signout/session/callback/csrf, etc.
+```
+Client sign-up flow: `POST /api/auth/register` creates the row, then the client calls
+`signIn("credentials", { email, password })` (next-auth/react) to establish the session,
+since Auth.js's Credentials provider only handles sign-in, not sign-up.
+
+### State Management (Redux Toolkit)
+- `StoreProvider` (src/store/StoreProvider.tsx) wraps the app in `<Provider>` (Redux) and
+  `<SessionProvider>` (next-auth/react), replacing the old React Context `AuthProvider`.
+- `SessionSync` mirrors next-auth's `useSession()` into `state.auth` so the rest of the app
+  reads auth state via Redux instead of calling `useSession()` everywhere.
+- `useAuth()` (src/hooks/useAuth.ts) reads `state.auth` via `useAppSelector` and exposes
+  `{ user, profile, loading, logout }`, where `logout()` calls next-auth's `signOut()`.
+- `cartSlice` / `wishlistSlice` hold cart items and wishlisted product ids; `product-card.tsx`
+  dispatches `addToCart` / `toggleWishlist` directly.
 
 ---
 

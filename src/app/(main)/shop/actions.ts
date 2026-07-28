@@ -1,19 +1,9 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getCategories as fetchCategories, type CategoryItem } from "@/server/products/product.service";
 
-export type CategoryItem = {
-  id: number;
-  name: string;
-};
+export type { CategoryItem } from "@/server/products/product.service";
 
 export async function getCategories(): Promise<CategoryItem[]> {
-  const rows = await prisma.category.findMany({
-    orderBy: { category_name: "asc" },
-  });
-
-  return rows.map((c) => ({
-    id: Number(c.category_id),
-    name: c.category_name,
-  }));
+  return fetchCategories();
 }

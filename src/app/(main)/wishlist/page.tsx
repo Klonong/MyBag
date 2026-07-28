@@ -12,9 +12,13 @@ import { Heart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { removeFromWishlist } from "@/store/wishlistSlice";
 
 export default function WishlistPage() {
-  const wishlistProducts = products.slice(0, 4);
+  const productIds = useAppSelector((state) => state.wishlist.productIds);
+  const dispatch = useAppDispatch();
+  const wishlistProducts = products.filter((p) => productIds.includes(p.id));
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -63,7 +67,13 @@ export default function WishlistPage() {
               />
             </AspectRatio>
             <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-colors">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                dispatch(removeFromWishlist(product.id));
+              }}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-colors"
+            >
               <Heart className="w-4 h-4 text-tertiary fill-tertiary" />
             </button>
             <div className="p-2 sm:p-3 bg-card">

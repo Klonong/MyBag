@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { authService } from "@/services/auth.service";
-import client from "@/api/client";
+import { signIn, getSession } from "next-auth/react";
 
 export function useSignIn() {
   const router = useRouter();
@@ -18,25 +17,23 @@ export function useSignIn() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await authService.signIn(email, password);
-      if (error) {
-        toast.error(error.message);
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error("Invalid email or password.");
         return;
       }
 
-      const userId = data.user?.id;
-      if (userId) {
-        const { data: profile } = await client
-          .from("users")
-          .select("role")
-          .eq("id", userId)
-          .single();
+      const session = await getSession();
 
-        if (profile?.role === "admin") {
-          toast.success("Welcome, Admin!");
-          router.push("/admin/create-product");
-          return;
-        }
+      if (session?.user?.role === "admin") {
+        toast.success("Welcome, Admin!");
+        router.push("/admin/create-product");
+        return;
       }
 
       toast.success("Signed in successfully!");

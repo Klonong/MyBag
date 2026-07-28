@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { authService } from "@/services/auth.service";
+import useAuth from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const navItems = [
@@ -23,6 +23,7 @@ const navItems = [
 export default function AccountSettingsPage() {
   const [active, setActive] = useState("personal");
   const router = useRouter();
+  const { logout } = useAuth();
 
   const scrollTo = (id: string) => {
     setActive(id);
@@ -30,12 +31,12 @@ export default function AccountSettingsPage() {
   };
 
   async function handleSignOut() {
-    const { error } = await authService.signOut();
-    if (error) {
-      toast.error(error.message);
-    } else {
+    try {
+      await logout();
       toast.success("Signed out successfully.");
       router.push("/login");
+    } catch {
+      toast.error("Failed to sign out.");
     }
   }
 

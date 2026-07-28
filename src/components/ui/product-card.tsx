@@ -6,6 +6,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HeartIcon, ShoppingCart } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addToCart } from "@/store/cartSlice";
+import { toggleWishlist } from "@/store/wishlistSlice";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +18,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const dispatch = useAppDispatch();
+  const isWishlisted = useAppSelector((state) =>
+    state.wishlist.productIds.includes(product.id)
+  );
 
 
   return (
@@ -73,7 +81,16 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              console.log(`Quick Add clicked for product ID: ${product.id}`);
+              dispatch(
+                addToCart({
+                  id: product.id,
+                  name: product.name,
+                  subtitle: product.description,
+                  price: product.price,
+                  image: product.image,
+                })
+              );
+              toast.success(`Added "${product.name}" to your bag.`);
             }}
           >
             <ShoppingCart className="w-4 h-4" />
@@ -83,10 +100,12 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              console.log(`Favorite clicked for product ID: ${product.id}`);
+              dispatch(toggleWishlist(product.id));
             }}
           >
-            <HeartIcon className="w-4 h-4" />
+            <HeartIcon
+              className={`w-4 h-4 ${isWishlisted ? "fill-tertiary text-tertiary" : ""}`}
+            />
           </Button>
         </div>
       </div>

@@ -1,12 +1,14 @@
-import { useContext } from "react";
-import { AuthContext } from "@/context/AuthProvider";
+import { signOut } from "next-auth/react";
+import { useAppSelector } from "@/store/hooks";
 
 const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+  const { user, status } = useAppSelector((state) => state.auth);
+
+  async function logout() {
+    await signOut({ redirect: false });
   }
-  return context;
+
+  return { user, profile: user, loading: status === "loading", logout };
 };
 
 export default useAuth;

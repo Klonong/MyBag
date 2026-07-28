@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { authService } from "@/services/auth.service";
+import { signIn } from "next-auth/react";
 
 export function useSignUp() {
   const [email, setEmail] = useState("");
@@ -19,15 +19,30 @@ export function useSignUp() {
     }
     setLoading(true);
     try {
-      const { error } = await authService.signUp(email, password, phone);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(
-          "Account created! Please check your email to verify your address.",
-          { duration: 6000 },
-        );
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, phone }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to create account.");
+        return;
       }
+
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.success("Account created! Please sign in.");
+        return;
+      }
+
+      toast.success("Account created! Welcome to Pioma.");
     } finally {
       setLoading(false);
     }

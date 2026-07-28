@@ -14,10 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { PackagePlus, Plus, Trash2, Upload, X, ImageIcon } from "lucide-react";
-import client from "@/api/client";
 import Image from "next/image";
-
-const BUCKET = "Product Image";
 
 const labelClass =
   "block text-[0.65rem] font-semibold tracking-widest text-zinc-400 mb-1.5";
@@ -50,19 +47,18 @@ async function uploadFiles(
   files: File[],
   folder: string
 ): Promise<string[]> {
-  const urls: string[] = [];
-  for (const file of files) {
-    const ext = file.name.split(".").pop();
-    const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
-    const { error } = await client.storage.from(BUCKET).upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
-    if (error) throw new Error(`Upload failed: ${error.message}`);
-    const { data } = client.storage.from(BUCKET).getPublicUrl(path);
-    urls.push(data.publicUrl);
+  const formData = new FormData();
+  formData.set("folder", folder);
+  files.forEach((file) => formData.append("files", file));
+
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error ?? "Upload failed.");
   }
-  return urls;
+
+  return data.urls as string[];
 }
 
 export default function CreateProductPage() {
