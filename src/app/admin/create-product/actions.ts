@@ -1,7 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(/\/$/, "");
 
 export type CreateProductState = {
   success: boolean;
@@ -35,64 +36,37 @@ export async function getAdminFormData(): Promise<{
   categories: AdminSelectItem[];
   badges: AdminSelectItem[];
 }> {
-  const [categories, badges] = await Promise.all([
-    prisma.category.findMany({ orderBy: { category_name: "asc" } }),
-    prisma.badge.findMany({ orderBy: { badge_name: "asc" } }),
+  const [categoriesRes, badgesRes] = await Promise.all([
+    fetch(`${API_URL}/categories`, { cache: "no-store" }),
+    fetch(`${API_URL}/badges`, { cache: "no-store" }),
   ]);
 
   return {
-    categories: categories.map((c) => ({
-      id: Number(c.category_id),
-      name: c.category_name,
-    })),
-    badges: badges.map((b) => ({
-      id: Number(b.badge_id),
-      name: b.badge_name,
-    })),
+    categories: categoriesRes.ok ? await categoriesRes.json() : [],
+    badges: badgesRes.ok ? await badgesRes.json() : [],
   };
 }
 
 export async function createProduct(
   input: CreateProductInput
 ): Promise<CreateProductState> {
-  const {
-    name,
-    description,
-    price,
-    discount,
-    categoryId,
-    badgeId,
-    productImageUrls,
-    colors,
-  } = input;
-
   try {
-    await prisma.products.create({
-      data: {
-        name,
-        description,
-        price,
-        discount: discount ?? null,
-        category_id: categoryId,
-        badge_id: badgeId,
-        product_images: {
-          create: productImageUrls.map((url) => ({ image_url: url })),
-        },
-        product_colors: {
-          create: colors.map((color) => ({
-            name: color.name,
-            hex_code: color.hexCode,
-            stock: color.stock,
-            product_color_images: {
-              create: color.imageUrls.map((url) => ({ image_url: url })),
-            },
-          })),
-        },
-      },
+    const res = await fetch(`${API_URL}/products`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
     });
 
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      return {
+        success: false,
+        message: body?.message ?? "Failed to create product.",
+      };
+    }
+
     revalidatePath("/shop");
-    return { success: true, message: `Product "${name}" created successfully!` };
+    return { success: true, message: `Product "${input.name}" created successfully!` };
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Failed to create product.";

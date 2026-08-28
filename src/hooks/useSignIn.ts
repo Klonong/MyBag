@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
-import client from "@/api/client";
 
 export function useSignIn() {
   const router = useRouter();
@@ -24,19 +23,10 @@ export function useSignIn() {
         return;
       }
 
-      const userId = data.user?.id;
-      if (userId) {
-        const { data: profile } = await client
-          .from("users")
-          .select("role")
-          .eq("id", userId)
-          .single();
-
-        if (profile?.role === "admin") {
-          toast.success("Welcome, Admin!");
-          router.push("/admin/create-product");
-          return;
-        }
+      if (data?.user.role === "admin") {
+        toast.success("Welcome, Admin!");
+        router.push("/admin/create-product");
+        return;
       }
 
       toast.success("Signed in successfully!");

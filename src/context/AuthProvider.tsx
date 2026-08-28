@@ -1,59 +1,43 @@
 "use client";
-import client from "@/api/client";
-import { createContext, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import { authService, type AuthUser } from "@/services/auth.service";
+import { createContext, useCallback, useEffect, useState } from "react";
 
-export type UserProfile = {
-  id: string;
-  email: string;
-  name: string | null;
-  phone: string | null;
-  role: string;
-};
+export type UserProfile = AuthUser;
 
 type AuthContextType = {
-  user: User | null;
+  user: AuthUser | null;
   profile: UserProfile | null;
   loading: boolean;
+  refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await client
-      .from("users")
-      .select("id, email, name, phone, role")
-      .eq("id", userId)
-      .single();
-    setProfile(data as UserProfile | null);
-  };
-
-  useEffect(() => {
-    const { data: listener } = client.auth.onAuthStateChange(
-      async (_event, session) => {
-        const authUser = session?.user ?? null;
-        setUser(authUser);
-        if (authUser) {
-          await fetchProfile(authUser.id);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
-      },
-    );
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+  const applyMe = useCallback(({ data }: { data: { user: AuthUser } | null }) => {
+    setUser(data?.user ?? null);
+    setLoading(false);
   }, []);
 
+  const refresh = useCallback(async () => {
+    applyMe(await authService.getMe());
+  }, [applyMe]);
+
+  useEffect(() => {
+    let active = true;
+    authService.getMe().then((result) => {
+      if (active) applyMe(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [applyMe]);
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile: user, loading, refresh }}>
       {children}
     </AuthContext.Provider>
   );

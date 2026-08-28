@@ -1,4 +1,5 @@
-import client from "@/api/client";
+import { api } from "@/lib/api";
+import type { AuthUser } from "@/services/auth.service";
 
 export type ProfileUpdate = {
   name?: string;
@@ -6,22 +7,8 @@ export type ProfileUpdate = {
 };
 
 export const profileService = {
-  async getProfile(userId: string) {
-    const { data, error } = await client
-      .from("users")
-      .select("id, email, name, phone, role")
-      .eq("id", userId)
-      .single();
-    return { data, error };
-  },
+  getProfile: (userId: string) => api.get<AuthUser>(`/users/${userId}`),
 
-  async updateProfile(userId: string, updates: ProfileUpdate) {
-    const { data, error } = await client
-      .from("users")
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq("id", userId)
-      .select("id, email, name, phone, role")
-      .single();
-    return { data, error };
-  },
+  updateProfile: (userId: string, updates: ProfileUpdate) =>
+    api.patch<AuthUser>(`/users/${userId}`, updates),
 };

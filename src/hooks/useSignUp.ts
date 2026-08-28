@@ -23,10 +23,7 @@ export function useSignUp() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success(
-          "Account created! Please check your email to verify your address.",
-          { duration: 6000 },
-        );
+        toast.success("Account created! You can now sign in.", { duration: 6000 });
       }
     } finally {
       setLoading(false);

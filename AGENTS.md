@@ -142,13 +142,12 @@ src/
 
 ---
 
-## Supabase Integration
+## NestJS Backend Integration
 
 ### Environment Variables Required
 Create `.env.local` with:
 ```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ### Auth Service (src/services/auth.service.ts)
@@ -157,12 +156,15 @@ authService.signIn(email, password)
 authService.signUp(email, password, phone)
 authService.signInWithOAuth(provider: "google" | "apple")
 authService.signOut()
+authService.getMe()
 ```
 
 ### Auth Provider Pattern
 - Wraps app in `AuthProvider` (client component)
-- Exposes `user` and `loading` state via React Context
-- Listens to `onAuthStateChange` for real-time updates
+- Calls `authService.getMe()` on mount to read the session from the backend's httpOnly JWT cookie
+- Exposes `user`, `profile`, `loading`, and `refresh()` via React Context
+
+See [NESTJS_INTEGRATION.md](NESTJS_INTEGRATION.md) for the full endpoint list and setup guide.
 
 ---
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(/\/$/, "");
 
 export type CategoryItem = {
   id: number;
@@ -8,12 +8,7 @@ export type CategoryItem = {
 };
 
 export async function getCategories(): Promise<CategoryItem[]> {
-  const rows = await prisma.category.findMany({
-    orderBy: { category_name: "asc" },
-  });
-
-  return rows.map((c) => ({
-    id: Number(c.category_id),
-    name: c.category_name,
-  }));
+  const res = await fetch(`${API_URL}/categories`, { next: { revalidate: 60 } });
+  if (!res.ok) return [];
+  return res.json();
 }
