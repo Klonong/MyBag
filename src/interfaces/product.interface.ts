@@ -40,7 +40,7 @@ export interface ProductColor {
   product_color_images?: ProductColorImage[];
 }
 
-export interface BackendProduct {
+export interface ProductDetail {
   id: string;
   name: string;
   description: string;
@@ -53,6 +53,6 @@ export interface BackendProduct {
 }
 
 export interface ProductListResponse {
-  items: BackendProduct[];
+  items: ProductDetail[];
   meta: ProductListMeta;
 }

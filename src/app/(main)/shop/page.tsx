@@ -38,7 +38,7 @@ import { productsService, type ProductSort } from "@/services/products.service";
 import { categoryService } from "@/services/category.service";
 import type { CategoryItem, Product, ProductListResponse } from "@/interfaces";
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 12;
 
 type BackendProductColor = {
   id?: number | string;
@@ -308,7 +308,7 @@ export default function Shop() {
             <p className="text-sm text-gray-600">Loading products...</p>
           </div>
         ) : currentProducts.length > 0 ? (
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {currentProducts.map((product) => (
               <ProductCard
                 key={product.id}

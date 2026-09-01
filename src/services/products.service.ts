@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { ProductListResponse } from "@/interfaces";
+import type { ProductDetail, ProductListResponse } from "@/interfaces";
 
 export type ProductSort =
   | "newest"
@@ -46,4 +46,5 @@ export const productsService = {
       Object.entries(params).map(([key, value]) => [key, String(value)]),
     ).toString()}`);
   },
+  getProductById: (id: string) => api.get<ProductDetail>(`/products/${id}`),
 };
