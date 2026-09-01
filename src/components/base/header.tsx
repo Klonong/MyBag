@@ -9,8 +9,8 @@ import { AuthRequiredDialog } from "@/components/ui/auth-required-dialog";
 
 const navLinks = [
   { href: "/shop", label: "Shop" },
-  { href: "/shop?badge=BESTSELLER", label: "Best Seller" },
-  { href: "/shop?sort=newest", label: "New Arrivals" },
+  { href: "/best-seller", label: "Best Seller" },
+  { href: "/new-arrivals", label: "New Arrivals" },
 ];
 
 export default function Header() {

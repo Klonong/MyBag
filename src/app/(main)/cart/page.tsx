@@ -158,36 +158,36 @@ export default function CartPage() {
         asideWidth="340px"
         className="gap-8 lg:gap-14"
         aside={
-          <Card className="border border-gray-200 rounded-xl shadow-none bg-white lg:sticky lg:top-24">
-            <CardHeader>
-              <CardTitle className="font-headline text-2xl lg:text-4xl">
+          <Card className="overflow-hidden rounded-[1.5rem] border border-[#f0e4df] bg-[#fffdfc] shadow-[0_18px_50px_rgba(97,79,70,0.08)] lg:sticky lg:top-24">
+            <CardHeader className="bg-gradient-to-br from-[#fff7f3] to-[#f8efe9] pb-4">
+              <CardTitle className="font-headline text-2xl lg:text-4xl text-[#1b1716]">
                 Order Summary
               </CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-5 p-5 sm:p-6">
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">{formatPrice(subtotal)}</span>
+                  <span className="text-[#5d5855]">Subtotal</span>
+                  <span className="font-medium text-[#1b1716]">{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="text-xs uppercase tracking-wider font-semibold">
+                  <span className="text-[#5d5855]">Shipping</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#8c7369]">
                     Calculated at next step
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Estimated Tax</span>
-                  <span className="font-medium">{formatPrice(0)}</span>
+                  <span className="text-[#5d5855]">Estimated Tax</span>
+                  <span className="font-medium text-[#1b1716]">{formatPrice(0)}</span>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-[#f0e7e3]" />
 
               <div className="flex items-center justify-between">
-                <span className="text-xl lg:text-2xl font-semibold">Total</span>
-                <span className="font-headline text-2xl lg:text-5xl">
+                <span className="text-xl lg:text-2xl font-semibold text-[#1b1716]">Total</span>
+                <span className="font-headline text-2xl lg:text-5xl text-[#1b1716]">
                   {formatPrice(subtotal)}
                 </span>
               </div>
@@ -200,16 +200,16 @@ export default function CartPage() {
                     router.push("/checkout");
                   }
                 }}
-                className="w-full h-11 rounded-full lg:rounded-none uppercase tracking-[0.18em] font-semibold bg-black text-white hover:bg-zinc-800"
+                className="h-12 w-full rounded-full bg-[#1b1716] text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[#3b2f2a]"
               >
                 Proceed to Checkout
               </Button>
 
-              <p className="text-center text-xs text-gray-500">
+              <p className="text-center text-[11px] uppercase tracking-[0.18em] text-[#8a7d77]">
                 Complimentary shipping on orders over {formatPrice(500)}
               </p>
 
-              <div className="flex items-center justify-center gap-4 text-gray-400">
+              <div className="flex items-center justify-center gap-4 text-[#b38b7d]">
                 <CreditCard className="h-4 w-4" />
                 <Landmark className="h-4 w-4" />
                 <Truck className="h-4 w-4" />
@@ -219,32 +219,46 @@ export default function CartPage() {
         }
       >
         <section className="px-0 lg:px-4">
-          <h1 className="font-headline text-3xl sm:text-4xl lg:text-5xl leading-none">
-            Your Bag
-          </h1>
-          <p className="text-sm text-gray-700 mt-3 max-w-xl">
-            Every piece in your archive is handcrafted with intention. Review
-            your selection before proceeding to finalization.
-          </p>
+          <div className="rounded-[1.75rem] border border-[#f2e3df] bg-gradient-to-r from-[#fffaf8] via-[#fff6f2] to-[#f5efe9] p-5 shadow-[0_18px_48px_rgba(101,82,72,0.06)] sm:p-6 lg:p-7">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b86650]">
+                  Your collection
+                </p>
+                <h1 className="mt-2 font-headline text-3xl sm:text-4xl lg:text-5xl leading-none text-[#1d1917]">
+                  Your Bag
+                </h1>
+              </div>
+              <div className="inline-flex items-center rounded-full border border-[#f1d8cf] bg-white/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6d5d57]">
+                {items.length} item{items.length === 1 ? "" : "s"}
+              </div>
+            </div>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-[#544d49]">
+              Every piece in your archive is handcrafted with intention. Review your selection before proceeding to finalization.
+            </p>
+          </div>
 
           {loading ? (
-            <div className="mt-8 text-sm text-gray-500">Loading your bag...</div>
+            <div className="mt-8 rounded-[1.5rem] border border-[#f3e8e3] bg-[#fffaf7] px-6 py-12 text-center text-sm text-[#625d5a]">
+              Loading your bag...
+            </div>
           ) : items.length === 0 ? (
-            <div className="mt-8 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
-              <p className="text-lg font-medium text-gray-900">Your bag is empty.</p>
-              <p className="mt-2 text-sm text-gray-500">
+            <div className="mt-8 rounded-[1.75rem] border border-dashed border-[#ead7cf] bg-[#fffaf7] p-8 text-center shadow-[0_16px_40px_rgba(98,79,70,0.04)]">
+              <p className="text-xl font-semibold text-[#1d1917]">Your bag is empty.</p>
+              <p className="mt-2 text-sm text-[#625d5a]">
                 Add a few handcrafted pieces to begin your collection.
               </p>
+              <Link href="/shop" className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#965f4d] hover:text-[#7d4f42]">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Continue browsing
+              </Link>
             </div>
           ) : (
-            <div className="mt-8 space-y-6">
+            <div className="mt-8 space-y-5">
               {items.map((item, index) => (
-                <div key={item.id}>
-                  <div className="grid grid-cols-[100px_1fr] sm:grid-cols-[120px_1fr] md:grid-cols-[140px_1fr] gap-3 sm:gap-4 md:gap-6 items-start">
-                    <AspectRatio
-                      ratio={1}
-                      className="overflow-hidden rounded-md bg-muted"
-                    >
+                <div key={item.id} className="rounded-[1.5rem] border border-[#f1e3de] bg-white p-3 shadow-[0_12px_30px_rgba(93,74,66,0.04)] sm:p-4">
+                  <div className="grid grid-cols-[100px_1fr] gap-3 sm:grid-cols-[120px_1fr] sm:gap-4 md:grid-cols-[140px_1fr] md:gap-6">
+                    <AspectRatio ratio={1} className="overflow-hidden rounded-[1rem] bg-[#f5efe9]">
                       <Image
                         src={item.image || "/placeholder-product.jpg"}
                         alt={item.name}
@@ -253,30 +267,24 @@ export default function CartPage() {
                       />
                     </AspectRatio>
 
-                    <div className="flex flex-col min-h-[100px] sm:min-h-[120px]">
-                      <div className="flex items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex min-h-[100px] flex-col sm:min-h-[120px]">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h2 className="text-base sm:text-lg md:text-xl font-semibold tracking-tight">
+                          <h2 className="text-base font-semibold tracking-tight text-[#1d1917] sm:text-lg md:text-xl">
                             {item.name}
                           </h2>
-                          <p className="text-xs sm:text-sm italic text-gray-500 mt-1">
+                          <p className="mt-1 text-xs italic text-[#7a706d] sm:text-sm">
                             {item.subtitle}
                           </p>
                         </div>
 
                         <Dialog>
                           <DialogTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="rounded-full"
-                                type="button"
-                              />
-                            }
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#f1e4df] bg-[#fffaf7] text-[#5e524f] transition-colors hover:bg-[#f6eee9]"
+                            type="button"
+                            aria-label={`Remove ${item.name}`}
                           >
                             <X className="h-4 w-4" />
-                            <span className="sr-only">Remove {item.name}</span>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
@@ -301,20 +309,20 @@ export default function CartPage() {
                         </Dialog>
                       </div>
 
-                      <div className="mt-auto flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 pt-3 sm:pt-4">
-                        <div className="inline-flex items-center border rounded-md overflow-hidden h-9 sm:h-10">
+                      <div className="mt-auto flex flex-col items-start justify-between gap-3 pt-3 sm:flex-row sm:items-end sm:pt-4">
+                        <div className="inline-flex items-center overflow-hidden rounded-full border border-[#f1e4df] bg-[#fffaf7]">
                           <Button
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => {
                               void decreaseQty(item.id);
                             }}
-                            className="rounded-none h-full"
+                            className="h-9 w-9 rounded-none border-0 bg-transparent text-[#332d2b] hover:bg-[#f5eee8]"
                             type="button"
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </Button>
-                          <span className="w-8 sm:w-9 text-center text-sm">
+                          <span className="w-9 text-center text-sm font-medium text-[#1f1b1a]">
                             {item.quantity}
                           </span>
                           <Button
@@ -323,27 +331,27 @@ export default function CartPage() {
                             onClick={() => {
                               void increaseQty(item.id);
                             }}
-                            className="rounded-none h-full"
+                            className="h-9 w-9 rounded-none border-0 bg-transparent text-[#332d2b] hover:bg-[#f5eee8]"
                             type="button"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </Button>
                         </div>
 
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           {item.originalPrice && (
-                            <p className="text-xs sm:text-sm text-gray-400 line-through">
+                            <p className="text-xs text-[#a19690] line-through sm:text-sm">
                               {formatPrice(item.originalPrice)}
                             </p>
                           )}
-                          <p className="text-lg sm:text-xl md:text-2xl font-semibold leading-none">
+                          <p className="text-lg font-semibold leading-none text-[#1d1917] sm:text-xl md:text-2xl">
                             {formatPrice(item.price * item.quantity)}
                           </p>
                         </div>
                       </div>
                     </div>
                   </div>
-                  {index < items.length - 1 && <Separator className="mt-6" />}
+                  {index < items.length - 1 && <Separator className="mt-5 bg-[#f2e7e2]" />}
                 </div>
               ))}
             </div>
@@ -351,10 +359,10 @@ export default function CartPage() {
 
           <Link
             href="/shop"
-            className="mt-8 lg:mt-10 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-gray-600 hover:text-black transition-colors"
+            className="mt-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6b625f] transition-colors hover:text-[#1d1917] lg:mt-10"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Continue Exploring the Collection
+            Continue exploring the collection
           </Link>
         </section>
       </RightAsideLayout>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { BasePage, LeftAsideLayout } from "@/components/base";
 import { ProductCard } from "@/components/ui/product-card";
 import {
@@ -33,216 +32,86 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Filter, staticFilterSections } from "@/components/ui/filter";
-import { productsService, type ProductSort } from "@/services/products.service";
-import { categoryService } from "@/services/category.service";
-import type { CategoryItem, Product, ProductListResponse } from "@/interfaces";
-
-const ITEMS_PER_PAGE = 12;
-
-type BackendProductColor = {
-  id?: number | string;
-  name: string;
-  hex_code?: string | null;
-  stock?: number;
-  product_color_images?: { image_url?: string }[];
-};
-
-type BackendProduct = {
-  id: string;
-  name: string;
-  description: string;
-  price: string | number | null;
-  categories?: { name?: string } | null;
-  badges?: { name?: string } | null;
-  product_images?: { image_url?: string }[];
-  product_colors?: BackendProductColor[];
-};
-
-const emptyProductListResponse: ProductListResponse = {
-  items: [],
-  meta: {
-    page: 1,
-    limit: ITEMS_PER_PAGE,
-    total: 0,
-    totalPages: 1,
-  },
-};
-
-const normalizeProduct = (item: BackendProduct): Product => {
-  const firstImage = item.product_images?.[0]?.image_url ?? "";
-  const variantImages = (item.product_colors ?? []).map((color) => {
-    const images = color.product_color_images ?? [];
-    return {
-      id: String(color.id ?? `${item.id}-${color.name}`),
-      name: color.name,
-      description: `${item.name} in ${color.name}`,
-      price: Number(item.price ?? 0),
-      color: color.name,
-      colorHex: color.hex_code ?? "#000000",
-      images: [
-        images[0]?.image_url ?? firstImage,
-        images[1]?.image_url ?? firstImage,
-        images[2]?.image_url ?? firstImage,
-      ] as [string, string, string],
-    };
-  });
-
-  return {
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    price: Number(item.price ?? 0),
-    image: firstImage,
-    badge: item.badges?.name ?? undefined,
-    category: item.categories?.name ?? "",
-    variants: variantImages,
-  };
-};
+import { Filter } from "@/components/ui/filter";
+import { useShopProducts } from "@/hooks/useShopProducts";
+import { ProductSort } from "@/services/products.service";
 
 export default function Shop() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
-  const [selectedColor, setSelectedColor] = useState("");
-  const [minPrice, setMinPrice] = useState<number | undefined>();
-  const [maxPrice, setMaxPrice] = useState<number | undefined>();
-  const [sort, setSort] = useState<ProductSort>("newest");
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [productsData, setProductsData] = useState<ProductListResponse>(
-    emptyProductListResponse,
-  );
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const result = await categoryService.getCategories();
-      if (!result.error && result.data) {
-        setCategories(result.data);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      const result = await productsService.getProductList({
-        page: currentPage,
-        limit: ITEMS_PER_PAGE,
-        categoryId: selectedCategoryId,
-        color: selectedColor || undefined,
-        minPrice,
-        maxPrice,
-        search: searchTerm.trim() || undefined,
-        sort,
-      });
-
-      if (result.error) {
-        console.error("Failed to fetch products:", result.error.message);
-        setProductsData(emptyProductListResponse);
-        setIsLoading(false);
-        return;
-      }
-
-      setProductsData(
-        result.data ?? {
-          ...emptyProductListResponse,
-          meta: {
-            ...emptyProductListResponse.meta,
-            page: currentPage,
-            limit: ITEMS_PER_PAGE,
-          },
-        },
-      );
-      setIsLoading(false);
-    };
-
-    fetchProducts();
-  }, [
+  const {
     currentPage,
-    selectedCategoryId,
-    selectedColor,
-    minPrice,
-    maxPrice,
     searchTerm,
+    setSearchTerm,
+    selectedCategoryId,
+    setSelectedCategoryId,
     sort,
-  ]);
+    setSort,
+    filteredProducts,
+    isLoading,
+    totalPages,
+    sortByItems,
+    categorySections,
+    handlePageChange,
+    setCurrentPage
+  } = useShopProducts();
 
-  const sortByItems = [
-    { label: "Newest Arrivals", value: "newest" },
-    { label: "Price: Low to High", value: "price_asc" },
-    { label: "Price: High to Low", value: "price_desc" },
-    { label: "Best Sellers", value: "best_seller" },
-  ];
-
-  const categorySections = [
-    {
-      title: "Category",
-      type: "category" as const,
-      items: categories.map((c) => ({
-        label: c.name,
-        value: String(c.id),
-        count: c._count?.products,
-      })),
-    },
-    ...staticFilterSections,
-  ];
-
-  const products: Product[] = (productsData.items ?? []).map(normalizeProduct);
-
-  const filteredProducts = products.filter((product) => {
-    const keyword = searchTerm.trim().toLowerCase();
-
-    if (!keyword) return true;
-
-    return (
-      product.name.toLowerCase().includes(keyword) ||
-      product.description.toLowerCase().includes(keyword) ||
-      product.category.toLowerCase().includes(keyword)
-    );
-  });
-
-  const totalPages = Math.max(1, productsData.meta.totalPages ?? 1);
-  const currentProducts = filteredProducts;
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
   const router = useRouter();
 
   return (
     <BasePage>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Shop</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Shop</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
-      {/* Header Section - Responsive */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 w-full gap-6 lg:gap-0 lg:items-end mt-6 lg:mt-0">
-        <div className="max-w-full lg:max-w-1/2">
-          <h1 className="font-headline text-3xl sm:text-4xl lg:text-5xl mb-2">
-            The Bag Archive
-          </h1>
-          <p className="text-sm md:text-base text-gray-700 max-w-lg">
-            A curated selection of hand-crafted vessels. From traditional
-            Balinese weaving to contemporary Jakarta leatherwork, each piece
-            tells a story of local mastery.
-          </p>
+      <section className="relative overflow-hidden rounded-[2rem] border border-[#f2e4df] bg-gradient-to-r from-[#fffaf8] via-[#fff6f2] to-[#f4ede8] p-5 shadow-[0_20px_60px_rgba(120,88,74,0.08)] sm:p-8 lg:p-10">
+        <div className="absolute -right-16 top-6 h-44 w-44 rounded-full bg-[#f0d9d0]/70 blur-3xl" />
+        <div className="absolute left-10 top-10 h-28 w-28 rounded-full bg-[#e9c2b3]/40 blur-2xl" />
+
+        <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="space-y-4">
+            <span className="inline-flex items-center rounded-full border border-[#eed5cb] bg-white/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b86650]">
+              Curated archive
+            </span>
+            <h1 className="font-headline text-4xl font-bold leading-none text-[#1e1a18] sm:text-5xl lg:text-6xl">
+              The Bag Archive
+            </h1>
+            <p className="max-w-xl text-sm leading-7 text-[#544d49] sm:text-base">
+              Discover hand-finished silhouettes made for everyday rituals, thoughtful gifting, and elevated travel. Each piece is designed to move beautifully with your life.
+            </p>
+          </div>
+
+          <div className="rounded-[1.5rem] border border-white/80 bg-white/75 p-4 backdrop-blur-sm shadow-[0_16px_36px_rgba(83,68,60,0.08)]">
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              <div className="rounded-2xl bg-[#f8efe9] p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9f7b68]">Craft</p>
+                <p className="mt-2 font-headline text-2xl font-bold text-[#1d1a18]">Handmade</p>
+              </div>
+              <div className="rounded-2xl bg-[#f7f1ee] p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9f7b68]">Origin</p>
+                <p className="mt-2 font-headline text-2xl font-bold text-[#1d1a18]">Bali</p>
+              </div>
+              <div className="rounded-2xl bg-[#f5eae4] p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9f7b68]">Edition</p>
+                <p className="mt-2 font-headline text-2xl font-bold text-[#1d1a18]">Limited</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Controls - Search + Sort */}
-        <div className="flex flex-col sm:flex-row lg:items-center gap-3 sm:gap-4 lg:justify-end w-full">
-          <div className="relative w-full sm:max-w-sm lg:max-w-xs">
+      {/* Controls - Search + Sort */}
+      <div className="mt-8 rounded-[1.5rem] border border-[#f1e5e0] bg-white/80 p-3 shadow-[0_10px_30px_rgba(90,77,68,0.05)] backdrop-blur-sm sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:flex-1">
             <Label htmlFor="product-search" className="sr-only">
               Search products
             </Label>
@@ -256,12 +125,12 @@ export default function Shop() {
                 setCurrentPage(1);
               }}
               placeholder="Search products"
-              className="w-full h-11 rounded-full border border-gray-200 bg-white/90 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-400 transition-all"
+              className="h-11 w-full rounded-full border border-[#eee3df] bg-[#fffdfc] pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm transition-all focus:border-[#d7a995] focus:ring-2 focus:ring-[#f2ddd5]"
             />
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase whitespace-nowrap hidden sm:inline">
+          <div className="flex items-center gap-3 lg:ml-auto lg:justify-end">
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-[#7a706d] sm:inline">
               Sort By
             </span>
             <Select
@@ -272,7 +141,7 @@ export default function Shop() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="w-full sm:w-auto sm:min-w-40 lg:w-48 bg-white/90 border-gray-200 shadow-sm">
+              <SelectTrigger className="w-full sm:min-w-40 lg:w-48 rounded-full border border-[#eee3df] bg-[#fffdfc] shadow-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -292,43 +161,47 @@ export default function Shop() {
 
       <LeftAsideLayout
         aside={
-          <Filter
-            sections={categorySections}
-            selectedCategory={selectedCategoryId ? String(selectedCategoryId) : undefined}
-            onCategoryChange={(value) => {
-              setSelectedCategoryId(value ? Number(value) : undefined);
-              setCurrentPage(1);
-            }}
-          />
+          <div className="rounded-[1.5rem] border border-[#f1e5e0] bg-[#fffdfc] p-4 shadow-[0_10px_25px_rgba(93,79,72,0.04)]">
+            <Filter
+              sections={categorySections}
+              selectedCategory={selectedCategoryId ? String(selectedCategoryId) : undefined}
+              onCategoryChange={(value) => {
+                setSelectedCategoryId(value ? Number(value) : undefined);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
         }
         className="mt-8"
       >
-        {isLoading ? (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-6 py-10 text-center">
-            <p className="text-sm text-gray-600">Loading products...</p>
-          </div>
-        ) : currentProducts.length > 0 ? (
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {currentProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={() => {
-                  console.log(
-                    `Navigating to product detail page for product ID: ${product.id}`,
-                  );
-                  router.push(`/shop/${product.id}`);
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-6 py-10 text-center">
-            <p className="text-sm text-gray-600">
-              No products found for &quot;{searchTerm}&quot;.
-            </p>
-          </div>
-        )}
+        <div className="rounded-[1.75rem] border border-[#f5e9e5] bg-[#fffdfc] p-3 shadow-[0_12px_35px_rgba(88,76,68,0.03)] sm:p-5">
+          {isLoading ? (
+            <div className="rounded-[1.25rem] border border-[#f2e8e3] bg-[#fff8f5] px-6 py-14 text-center">
+              <p className="text-sm text-gray-600">Loading products...</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onClick={() => {
+                    console.log(
+                      `Navigating to product detail page for product ID: ${product.id}`,
+                    );
+                    router.push(`/shop/${product.id}`);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[1.25rem] border border-dashed border-[#ead7cf] bg-[#fff8f5] px-6 py-14 text-center">
+              <p className="text-sm text-gray-600">
+                No products found for &quot;{searchTerm}&quot;.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Pagination */}
         {!isLoading && filteredProducts.length > 0 && totalPages > 1 && (
