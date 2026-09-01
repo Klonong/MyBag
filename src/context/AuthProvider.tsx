@@ -1,5 +1,6 @@
 "use client";
-import { authService, type AuthUser } from "@/services/auth.service";
+import type { AuthUser } from "@/interfaces";
+import { authService } from "@/services/auth.service";
 import { createContext, useCallback, useEffect, useState } from "react";
 
 export type UserProfile = AuthUser;

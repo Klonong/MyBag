@@ -37,9 +37,15 @@ interface FilterSection {
 
 interface FilterProps {
   sections?: FilterSection[];
+  selectedCategory?: string;
+  onCategoryChange?: (value: string) => void;
 }
 
-export function Filter({ sections = defaultSections }: FilterProps) {
+export function Filter({
+  sections = defaultSections,
+  selectedCategory,
+  onCategoryChange,
+}: FilterProps) {
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({
@@ -107,6 +113,8 @@ export function Filter({ sections = defaultSections }: FilterProps) {
                     (visibleItems[section.title.toLowerCase()] || 4) <
                     section.items.length
                   }
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={onCategoryChange}
                 />
               )}
 
@@ -148,12 +156,16 @@ function CategoryItems({
   visibleCount,
   onShowMore,
   showShowMore,
+  selectedCategory,
+  onCategoryChange,
 }: {
   items: Array<{ label: string; count?: number; value: string }>;
   sectionId: string;
   visibleCount: number;
   onShowMore: () => void;
   showShowMore: boolean;
+  selectedCategory?: string;
+  onCategoryChange?: (value: string) => void;
 }) {
   return (
     <>
@@ -164,6 +176,12 @@ function CategoryItems({
         >
           <Checkbox
             id={item.value}
+            checked={selectedCategory === item.value}
+            onCheckedChange={() => {
+              onCategoryChange?.(
+                selectedCategory === item.value ? "" : item.value,
+              );
+            }}
             className="transition-all duration-200"
           />
           <Label

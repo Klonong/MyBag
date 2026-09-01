@@ -18,8 +18,7 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { products } from "@/data/products";
-import { Product } from "@/types/product";
-import { ProductVariant } from "@/types/productVariant";
+import type { Product, ProductVariant } from "@/interfaces";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";

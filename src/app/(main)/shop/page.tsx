@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BasePage, LeftAsideLayout } from "@/components/base";
-import { Filter } from "@/components/ui/filter";
 import { ProductCard } from "@/components/ui/product-card";
-import { products } from "@/data/products";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,35 +33,164 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getCategories, type CategoryItem } from "./actions";
-import { staticFilterSections } from "@/components/ui/filter";
+import { Filter, staticFilterSections } from "@/components/ui/filter";
+import { productsService, type ProductSort } from "@/services/products.service";
+import { categoryService } from "@/services/category.service";
+import type { CategoryItem, Product, ProductListResponse } from "@/interfaces";
 
 const ITEMS_PER_PAGE = 6;
+
+type BackendProductColor = {
+  id?: number | string;
+  name: string;
+  hex_code?: string | null;
+  stock?: number;
+  product_color_images?: { image_url?: string }[];
+};
+
+type BackendProduct = {
+  id: string;
+  name: string;
+  description: string;
+  price: string | number | null;
+  categories?: { name?: string } | null;
+  badges?: { name?: string } | null;
+  product_images?: { image_url?: string }[];
+  product_colors?: BackendProductColor[];
+};
+
+const emptyProductListResponse: ProductListResponse = {
+  items: [],
+  meta: {
+    page: 1,
+    limit: ITEMS_PER_PAGE,
+    total: 0,
+    totalPages: 1,
+  },
+};
+
+const normalizeProduct = (item: BackendProduct): Product => {
+  const firstImage = item.product_images?.[0]?.image_url ?? "";
+  const variantImages = (item.product_colors ?? []).map((color) => {
+    const images = color.product_color_images ?? [];
+    return {
+      id: String(color.id ?? `${item.id}-${color.name}`),
+      name: color.name,
+      description: `${item.name} in ${color.name}`,
+      price: Number(item.price ?? 0),
+      color: color.name,
+      colorHex: color.hex_code ?? "#000000",
+      images: [
+        images[0]?.image_url ?? firstImage,
+        images[1]?.image_url ?? firstImage,
+        images[2]?.image_url ?? firstImage,
+      ] as [string, string, string],
+    };
+  });
+
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    price: Number(item.price ?? 0),
+    image: firstImage,
+    badge: item.badges?.name ?? undefined,
+    category: item.categories?.name ?? "",
+    variants: variantImages,
+  };
+};
 
 export default function Shop() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
+  const [selectedColor, setSelectedColor] = useState("");
+  const [minPrice, setMinPrice] = useState<number | undefined>();
+  const [maxPrice, setMaxPrice] = useState<number | undefined>();
+  const [sort, setSort] = useState<ProductSort>("newest");
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [productsData, setProductsData] = useState<ProductListResponse>(
+    emptyProductListResponse,
+  );
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    getCategories().then(setCategories);
+    const fetchCategories = async () => {
+      const result = await categoryService.getCategories();
+      if (!result.error && result.data) {
+        setCategories(result.data);
+      }
+    };
+
+    fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      const result = await productsService.getProductList({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        categoryId: selectedCategoryId,
+        color: selectedColor || undefined,
+        minPrice,
+        maxPrice,
+        search: searchTerm.trim() || undefined,
+        sort,
+      });
+
+      if (result.error) {
+        console.error("Failed to fetch products:", result.error.message);
+        setProductsData(emptyProductListResponse);
+        setIsLoading(false);
+        return;
+      }
+
+      setProductsData(
+        result.data ?? {
+          ...emptyProductListResponse,
+          meta: {
+            ...emptyProductListResponse.meta,
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+          },
+        },
+      );
+      setIsLoading(false);
+    };
+
+    fetchProducts();
+  }, [
+    currentPage,
+    selectedCategoryId,
+    selectedColor,
+    minPrice,
+    maxPrice,
+    searchTerm,
+    sort,
+  ]);
 
   const sortByItems = [
     { label: "Newest Arrivals", value: "newest" },
-    { label: "Price: Low to High", value: "price-asc" },
-    { label: "Price: High to Low", value: "price-desc" },
-    { label: "Best Sellers", value: "best-sellers" },
+    { label: "Price: Low to High", value: "price_asc" },
+    { label: "Price: High to Low", value: "price_desc" },
+    { label: "Best Sellers", value: "best_seller" },
   ];
 
   const categorySections = [
     {
       title: "Category",
       type: "category" as const,
-      items: categories.map((c) => ({ label: c.name, value: String(c.id) })),
+      items: categories.map((c) => ({
+        label: c.name,
+        value: String(c.id),
+        count: c._count?.products,
+      })),
     },
     ...staticFilterSections,
   ];
+
+  const products: Product[] = (productsData.items ?? []).map(normalizeProduct);
 
   const filteredProducts = products.filter((product) => {
     const keyword = searchTerm.trim().toLowerCase();
@@ -77,17 +204,8 @@ export default function Shop() {
     );
   });
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProducts.length / ITEMS_PER_PAGE),
-  );
-  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIdx = startIdx + ITEMS_PER_PAGE;
-  const currentProducts = filteredProducts.slice(startIdx, endIdx);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  const totalPages = Math.max(1, productsData.meta.totalPages ?? 1);
+  const currentProducts = filteredProducts;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -133,7 +251,10 @@ export default function Shop() {
               id="product-search"
               type="text"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search products"
               className="w-full h-11 rounded-full border border-gray-200 bg-white/90 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-gray-400 transition-all"
             />
@@ -143,7 +264,14 @@ export default function Shop() {
             <span className="text-xs font-semibold tracking-wider text-gray-500 uppercase whitespace-nowrap hidden sm:inline">
               Sort By
             </span>
-            <Select items={sortByItems} defaultValue={"newest"}>
+            <Select
+              items={sortByItems}
+              value={sort}
+              onValueChange={(value) => {
+                setSort(value as ProductSort);
+                setCurrentPage(1);
+              }}
+            >
               <SelectTrigger className="w-full sm:w-auto sm:min-w-40 lg:w-48 bg-white/90 border-gray-200 shadow-sm">
                 <SelectValue />
               </SelectTrigger>
@@ -162,8 +290,24 @@ export default function Shop() {
         </div>
       </div>
 
-      <LeftAsideLayout aside={<Filter sections={categorySections} />} className="mt-8">
-        {currentProducts.length > 0 ? (
+      <LeftAsideLayout
+        aside={
+          <Filter
+            sections={categorySections}
+            selectedCategory={selectedCategoryId ? String(selectedCategoryId) : undefined}
+            onCategoryChange={(value) => {
+              setSelectedCategoryId(value ? Number(value) : undefined);
+              setCurrentPage(1);
+            }}
+          />
+        }
+        className="mt-8"
+      >
+        {isLoading ? (
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-6 py-10 text-center">
+            <p className="text-sm text-gray-600">Loading products...</p>
+          </div>
+        ) : currentProducts.length > 0 ? (
           <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {currentProducts.map((product) => (
               <ProductCard
@@ -181,13 +325,13 @@ export default function Shop() {
         ) : (
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-6 py-10 text-center">
             <p className="text-sm text-gray-600">
-              No products found for "{searchTerm}".
+              No products found for &quot;{searchTerm}&quot;.
             </p>
           </div>
         )}
 
         {/* Pagination */}
-        {filteredProducts.length > ITEMS_PER_PAGE && (
+        {!isLoading && filteredProducts.length > 0 && totalPages > 1 && (
           <div className="mt-10 md:mt-12 flex justify-center">
             <Pagination>
               <PaginationContent className="flex-wrap justify-center">

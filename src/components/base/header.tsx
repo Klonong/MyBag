@@ -80,7 +80,7 @@ export default function Header() {
             href="/"
             className="font-headline text-xl sm:text-2xl font-bold tracking-[0.15em] text-primary hover:text-tertiary transition-colors duration-300 select-none"
           >
-            PIOMA
+            MyBag
           </Link>
 
           {/* Nav - hidden on mobile, visible on lg+ */}
@@ -165,7 +165,7 @@ export default function Header() {
           <div className="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-6 h-16 border-b border-gray-100">
               <span className="font-headline text-xl font-bold tracking-[0.15em] text-primary">
-                PIOMA
+                MyBag
               </span>
               <button
                 onClick={() => setMobileMenuOpen(false)}

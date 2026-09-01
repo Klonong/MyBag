@@ -195,7 +195,7 @@ export default function Home() {
               Stories Woven Across Generations
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-              Every Pioma piece carries the living legacy of Indonesian artisans.
+              Every MyBag piece carries the living legacy of Indonesian artisans.
               From the rattan weavers of Bali to the leather craftsmen of Jakarta,
               each creation honors techniques passed down through countless
               generations.
@@ -254,7 +254,7 @@ export default function Home() {
             Stay Connected
           </p>
           <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
-            Join the Pioma Archive
+            Join the MyBag Archive
           </h2>
           <p className="text-white/60 text-sm sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
             Be the first to discover new arrivals, exclusive offers, and stories

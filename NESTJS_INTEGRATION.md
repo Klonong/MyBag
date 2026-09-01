@@ -1,11 +1,11 @@
-# Pioma ↔ NestJS Backend Integration Guide
+# MyBag ↔ NestJS Backend Integration Guide
 
-Pioma's Next.js app is a pure frontend that talks to a separate **Pioma API**
+MyBag's Next.js app is a pure frontend that talks to a separate **MyBag API**
 backend over HTTP. This document describes the contract the frontend expects.
 
 ## Backend overview
 
-Pioma API is a [NestJS](https://nestjs.com/) 11 REST API secured with JWT auth,
+MyBag API is a [NestJS](https://nestjs.com/) 11 REST API secured with JWT auth,
 backed by PostgreSQL via [Prisma](https://www.prisma.io/), with Redis-backed
 caching/queues and OpenAPI (Swagger) docs.
 
@@ -174,7 +174,7 @@ built:
 [sql/schema.sql](sql/schema.sql) documents the tables the frontend expects:
 `users`, `addresses`, `categories`, `badges`, `products`, `product_images`,
 `product_colors`, `product_color_images`, `carts`, `cart_items`,
-`wishlist_items`, `orders`, `order_items`. On the Pioma API side these are
+`wishlist_items`, `orders`, `order_items`. On the MyBag API side these are
 modeled 1:1 in `prisma/schema.prisma` and applied via `prisma migrate`.
 
 Backend setup notes:
@@ -192,7 +192,7 @@ Backend setup notes:
 
 ## 4. Local dev checklist
 
-1. In the Pioma API repo: `npm install`, `cp .env.example .env` and fill in
+1. In the MyBag API repo: `npm install`, `cp .env.example .env` and fill in
    `DATABASE_URL`, `JWT_SECRET`, `REDIS_HOST`/`REDIS_PORT`, then
    `npm run prisma:generate && npm run prisma:migrate`.
 2. `npm run start:dev` to run the NestJS API on port `3000` (or set `PORT` /

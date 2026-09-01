@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { AuthUser } from "@/services/auth.service";
+import type { AuthUser } from "@/interfaces";
 
 export type ProfileUpdate = {
   name?: string;

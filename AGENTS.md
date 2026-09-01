@@ -4,11 +4,11 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Pioma E-Commerce Project
+# MyBag E-Commerce Project
 
 ## Project Overview
 
-**Pioma** is an Indonesian artisan handbag e-commerce platform built with:
+**MyBag** is an Indonesian artisan handbag e-commerce platform built with:
 - **Framework**: Next.js 16.2.9 (App Router)
 - **UI Library**: shadcn/ui with Base UI components
 - **Backend**: Supabase (Authentication + Database)

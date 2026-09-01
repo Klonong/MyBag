@@ -43,7 +43,7 @@ export default function Footer() {
               href="/"
               className="font-headline text-2xl font-bold tracking-[0.15em] text-white hover:text-tertiary transition-colors duration-300"
             >
-              PIOMA
+              MyBag
             </Link>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
               Hand-crafted vessels from the archipelago. Each piece carries the
@@ -134,7 +134,7 @@ export default function Footer() {
       <div className="px-6 md:px-16 lg:px-24 py-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-white/30">
-            © {new Date().getFullYear()} Pioma. All rights reserved.
+            © {new Date().getFullYear()} MyBag. All rights reserved.
           </p>
 
           {/* Socials */}

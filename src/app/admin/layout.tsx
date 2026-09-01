@@ -35,7 +35,7 @@ export default function AdminLayout({
       <header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/admin/create-product" className="font-headline text-xl font-bold tracking-widest text-zinc-900">
-            PIOMA <span className="text-tertiary text-sm font-sans font-normal tracking-normal">Admin</span>
+            MyBag <span className="text-tertiary text-sm font-sans font-normal tracking-normal">Admin</span>
           </Link>
           <button
             onClick={handleLogout}

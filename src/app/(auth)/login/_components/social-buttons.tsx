@@ -1,4 +1,4 @@
-import type { OAuthProvider } from "@/services/auth.service";
+import type { OAuthProvider } from "@/interfaces";
 
 function GoogleIcon() {
   return (

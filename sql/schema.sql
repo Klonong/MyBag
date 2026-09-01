@@ -1,4 +1,4 @@
--- Pioma e-commerce schema for the NestJS backend (PostgreSQL).
+-- MyBag e-commerce schema for the NestJS backend (PostgreSQL).
 -- Replaces the old Prisma/Supabase schema. Run against a fresh Postgres database.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

@@ -22,6 +22,7 @@ export function useSignIn() {
         toast.error(error.message);
         return;
       }
+      console.log(data?.user.role);
 
       if (data?.user.role === "admin") {
         toast.success("Welcome, Admin!");

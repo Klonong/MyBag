@@ -1,4 +1,4 @@
-import { Product } from "@/types/product";
+import type { Product } from "@/interfaces";
 
 const BASE = "https://images.unsplash.com/photo-";
 const toImg = (id: string) => `${BASE}${id}?w=500&h=500&fit=crop`;

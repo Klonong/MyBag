@@ -184,7 +184,7 @@ export function PaymentStep({
             </p>
             <p>
               Account Name:{" "}
-              <span className="text-primary font-medium">PT PIOMA INDONESIA</span>
+              <span className="text-primary font-medium">PT MyBag INDONESIA</span>
             </p>
           </div>
           <p className="text-xs text-muted-foreground mt-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Product } from "@/types/product";
+import type { Product } from "@/interfaces";
 import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

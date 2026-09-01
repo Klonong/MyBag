@@ -18,7 +18,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col flex-1 justify-center items-center text-center gap-4">
           <h1 className="font-headline text-5xl font-bold text-white tracking-[0.25em]">
-            PIOMA
+            MyBag
           </h1>
           <p className="text-zinc-300 text-sm max-w-65 leading-relaxed">
             Where traditional Indonesian craftsmanship meets contemporary

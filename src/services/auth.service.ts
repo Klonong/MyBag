@@ -1,14 +1,7 @@
 import { api, API_URL } from "@/lib/api";
+import type { AuthUser, OAuthProvider } from "@/interfaces";
 
-export type OAuthProvider = "google" | "apple";
-
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string | null;
-  phone: string | null;
-  role: string;
-};
+export type { AuthUser, OAuthProvider } from "@/interfaces";
 
 export const authService = {
   signIn: (email: string, password: string) =>
