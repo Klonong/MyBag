@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { BasePageCenter, RightAsideLayout } from "@/components/base";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -67,6 +68,7 @@ const toCartItemView = (item: CartApiItem): CartItem => {
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [cartSubtotal, setCartSubtotal] = useState(0);
@@ -87,6 +89,7 @@ export default function CartPage() {
 
     const nextItems = (result.data?.items ?? []).map(toCartItemView);
     setItems(nextItems);
+    setSelectedItemIds(nextItems.map((item) => item.id));
     setCartSubtotal(Number(result.data?.subtotal ?? 0));
     setLoading(false);
   };
@@ -99,11 +102,18 @@ export default function CartPage() {
     void fetchCart();
   }, []);
 
-  const subtotal = useMemo(
-    () =>
-      cartSubtotal || items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [cartSubtotal, items],
-  );
+  const allItemsSelected = items.length > 0 && selectedItemIds.length === items.length;
+  const subtotal = useMemo(() => {
+    if (allItemsSelected) {
+      return cartSubtotal || items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    }
+
+    return items.reduce(
+      (sum, item) =>
+        selectedItemIds.includes(item.id) ? sum + item.price * item.quantity : sum,
+      0,
+    );
+  }, [allItemsSelected, cartSubtotal, items, selectedItemIds]);
 
   const refreshCart = async () => {
     await loadCart();
@@ -255,6 +265,21 @@ export default function CartPage() {
             </div>
           ) : (
             <div className="mt-8 space-y-5">
+              <div className="flex items-center gap-2 px-1">
+                <Checkbox
+                  id="select-all-cart-items"
+                  checked={allItemsSelected}
+                  onCheckedChange={(checked) => {
+                    setSelectedItemIds(checked ? items.map((item) => item.id) : []);
+                  }}
+                />
+                <label
+                  htmlFor="select-all-cart-items"
+                  className="cursor-pointer text-xs font-semibold uppercase tracking-[0.16em] text-[#6d5d57]"
+                >
+                  Select all items
+                </label>
+              </div>
               {items.map((item, index) => (
                 <div key={item.id} className="rounded-[1.5rem] border border-[#f1e3de] bg-white p-3 shadow-[0_12px_30px_rgba(93,74,66,0.04)] sm:p-4">
                   <div className="grid grid-cols-[100px_1fr] gap-3 sm:grid-cols-[120px_1fr] sm:gap-4 md:grid-cols-[140px_1fr] md:gap-6">
@@ -269,13 +294,27 @@ export default function CartPage() {
 
                     <div className="flex min-h-[100px] flex-col sm:min-h-[120px]">
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h2 className="text-base font-semibold tracking-tight text-[#1d1917] sm:text-lg md:text-xl">
-                            {item.name}
-                          </h2>
-                          <p className="mt-1 text-xs italic text-[#7a706d] sm:text-sm">
-                            {item.subtitle}
-                          </p>
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            id={`cart-item-${item.id}`}
+                            checked={selectedItemIds.includes(item.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedItemIds((current) =>
+                                checked
+                                  ? [...current, item.id]
+                                  : current.filter((id) => id !== item.id),
+                              );
+                            }}
+                            className="mt-1"
+                          />
+                          <div>
+                            <h2 className="text-base font-semibold tracking-tight text-[#1d1917] sm:text-lg md:text-xl">
+                              {item.name}
+                            </h2>
+                            <p className="mt-1 text-xs italic text-[#7a706d] sm:text-sm">
+                              {item.subtitle}
+                            </p>
+                          </div>
                         </div>
 
                         <Dialog>

@@ -1,38 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Truck, Zap, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { addressService, type Address } from "@/services/address.service";
 import type { ShippingData } from "./types";
-
-type SavedAddress = {
-  id: string;
-  label: string;
-  name: string;
-  line1: string;
-  line2: string;
-};
-
-const SAVED_ADDRESSES: SavedAddress[] = [
-  {
-    id: "home",
-    label: "HOME",
-    name: "Aris Setiawan",
-    line1: "Jl. Raya Kerobokan No. 12",
-    line2: "Denpasar, Bali 80361",
-  },
-  {
-    id: "office",
-    label: "OFFICE",
-    name: "Aris Setiawan",
-    line1: "Jl. Sunset Road No. 88",
-    line2: "Kuta, Bali 80361",
-  },
-];
 
 export function ShippingStep({
   data,
@@ -45,19 +22,31 @@ export function ShippingStep({
 }) {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
 
-  const handleSelectAddress = (addr: SavedAddress) => {
+  useEffect(() => {
+    void addressService.list().then((result) => {
+      if (result.error) {
+        toast.error(result.error.message || "Unable to load saved addresses.");
+        return;
+      }
+      setSavedAddresses(result.data ?? []);
+    });
+  }, []);
+
+  const handleSelectAddress = (addr: Address) => {
     setSelectedAddress(addr.id);
     setShowForm(false);
-    const [line1, line2] = addr.line1.split(", ");
-    const cityProvPostal = addr.line2.split(", ");
     onChange({
-      fullName: addr.name,
-      address: addr.line1,
-      address2: "",
-      city: cityProvPostal[0] ?? "",
-      province: cityProvPostal[1]?.split(" ")[0] ?? "",
-      postalCode: cityProvPostal[1]?.split(" ")[1] ?? "",
+      addressId: addr.id,
+      fullName: addr.recipient_name,
+      phone: addr.phone,
+      address: addr.address_line,
+      address2: addr.address_line2 ?? "",
+      city: addr.city,
+      province: addr.province,
+      postalCode: addr.postal_code,
+      country: addr.country,
     });
   };
   const field = (
@@ -101,7 +90,7 @@ export function ShippingStep({
           Saved Addresses
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {SAVED_ADDRESSES.map((addr) => {
+          {savedAddresses.map((addr) => {
             const isSelected = selectedAddress === addr.id;
             return (
               <div
@@ -113,7 +102,7 @@ export function ShippingStep({
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs tracking-widest font-semibold text-primary">
-                    {addr.label}
+                    {(addr.label || "ADDRESS").toUpperCase()}
                   </span>
                   {isSelected && (
                     <CheckCircle2
@@ -122,11 +111,13 @@ export function ShippingStep({
                     />
                   )}
                 </div>
-                <p className="text-sm text-primary">{addr.name}</p>
+                <p className="text-sm text-primary">{addr.recipient_name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {addr.line1}
+                  {addr.address_line}{addr.address_line2 && `, ${addr.address_line2}`}
                 </p>
-                <p className="text-xs text-muted-foreground">{addr.line2}</p>
+                <p className="text-xs text-muted-foreground">
+                  {addr.city}, {addr.province} {addr.postal_code}
+                </p>
                 <button
                   type="button"
                   onClick={() => handleSelectAddress(addr)}
@@ -144,7 +135,7 @@ export function ShippingStep({
           })}
         </div>
 
-        <div className="flex items-center gap-3 mt-4">
+        {savedAddresses.length > 0 && <div className="flex items-center gap-3 mt-4">
           <Separator className="flex-1" />
           <button
             type="button"
@@ -157,7 +148,7 @@ export function ShippingStep({
             Or Enter New Address
           </button>
           <Separator className="flex-1" />
-        </div>
+        </div>}
       </div>
 
       {(showForm || (!selectedAddress && !showForm)) && (

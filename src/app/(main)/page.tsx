@@ -73,7 +73,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 py-12 sm:px-6 md:px-10 lg:px-16 lg:py-20">
           <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="max-w-xl">
-              <span className="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold tracking-[0.28em] text-white/90 uppercase backdrop-blur-sm">
+              <span className="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold tracking-[0.28em] text-white/90 uppercase backdrop-blur-sm">
                 New collection 2026
               </span>
               <h1 className="font-headline text-4xl font-bold leading-[0.95] text-white sm:text-5xl md:text-6xl lg:text-7xl">
@@ -279,14 +279,14 @@ export default function Home() {
 
       <section className="bg-[#1c1716]">
         <div className="mx-auto grid w-full max-w-[1600px] gap-8 px-4 py-16 sm:px-6 md:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:px-16 lg:py-20">
-          <div className="relative min-h-[320px] overflow-hidden rounded-[2rem]">
+          <div className="relative min-h-80 overflow-hidden rounded-[2rem]">
             <Image
               src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=900&h=1200&fit=crop"
               alt="Woman with bag"
               fill
               className="object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-r from-black/45 via-black/15 to-transparent" />
           </div>
 
           <div className="flex flex-col justify-center">

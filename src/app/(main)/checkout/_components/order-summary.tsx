@@ -8,30 +8,26 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatPrice } from "@/lib/utils";
-import {
-  orderItems,
-  SHIPPING_FEE_STANDARD,
-  SHIPPING_FEE_EXPRESS,
-  TAX_RATE,
-} from "./types";
+import type { CartItem } from "./types";
 
 export function OrderSummary({
   shippingMethod,
+  items,
 }: {
   shippingMethod: "standard" | "express";
+  items: CartItem[];
 }) {
   const [promo, setPromo] = useState("");
   const [applied, setApplied] = useState(false);
 
-  const subtotal = orderItems.reduce(
+  const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const shippingFee =
-    shippingMethod === "express" ? SHIPPING_FEE_EXPRESS : SHIPPING_FEE_STANDARD;
+  const shippingFee = 0;
   const discount = applied ? Math.round(subtotal * 0.1) : 0;
   const taxable = subtotal - discount;
-  const tax = Math.round(taxable * TAX_RATE);
+  const tax = 0;
   const total = taxable + shippingFee + tax;
 
   return (
@@ -41,7 +37,7 @@ export function OrderSummary({
       </h2>
 
       <div className="space-y-4 mb-5">
-        {orderItems.map((item) => (
+        {items.map((item) => (
           <div key={item.id} className="flex gap-2 sm:gap-3">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden shrink-0 bg-muted">
               <AspectRatio ratio={1}>
@@ -77,11 +73,11 @@ export function OrderSummary({
         )}
         <div className="flex justify-between text-muted-foreground">
           <span>Shipping ({shippingMethod === "express" ? "Express" : "Standard"})</span>
-          <span>{formatPrice(shippingFee)}</span>
+          <span>{shippingFee ? formatPrice(shippingFee) : "Calculated by API"}</span>
         </div>
         <div className="flex justify-between text-muted-foreground">
           <span>Estimated Tax</span>
-          <span>{formatPrice(tax)}</span>
+          <span>{tax ? formatPrice(tax) : "Calculated by API"}</span>
         </div>
       </div>
 
