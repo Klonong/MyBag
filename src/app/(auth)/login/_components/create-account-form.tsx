@@ -8,12 +8,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { Divider } from "./divider";
 import { SocialButtons } from "./social-buttons";
 
+type CreateAccountFormProps = {
+  onSuccess?: () => void;
+};
+
 const inputClass =
   "rounded-none border-x-0 border-t-0 border-b border-zinc-300 bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-zinc-900 px-0 h-10 placeholder:text-zinc-300";
 const labelClass =
   "block text-label-sm font-semibold tracking-widest text-zinc-400 mb-1.5";
 
-export function CreateAccountForm() {
+export function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
   const {
     email,
     setEmail,
@@ -25,7 +29,7 @@ export function CreateAccountForm() {
     setConfirm,
     loading,
     handleSignUp,
-  } = useSignUp();
+  } = useSignUp(onSuccess);
 
   return (
     <form onSubmit={handleSignUp} className="space-y-4">
@@ -58,6 +62,7 @@ export function CreateAccountForm() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           className={inputClass}
+          required
         />
       </div>
 

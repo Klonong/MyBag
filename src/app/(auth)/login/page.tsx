@@ -1,11 +1,30 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SignInForm } from "./_components/sign-in-form";
 import { CreateAccountForm } from "./_components/create-account-form";
 
 export default function LoginPage() {
+  const [activeTab, setActiveTab] = useState<"sign-in" | "create-account">(
+    "sign-in"
+  );
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
+  const handleSignUpSuccess = () => {
+    setShowSuccessDialog(true);
+    window.setTimeout(() => {
+      setShowSuccessDialog(false);
+      setActiveTab("sign-in");
+    }, 2000);
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* ── Left panel ── */}
@@ -41,7 +60,11 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-between bg-white px-8 py-10 lg:px-16">
         <div className="w-full max-w-sm flex-1 flex flex-col justify-center">
           <Suspense fallback={<div className="h-64" />}>
-            <Tabs defaultValue="sign-in" className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as "sign-in" | "create-account")}
+              className="w-full"
+            >
               <TabsList
                 variant="line"
                 className="w-full justify-start rounded-none bg-transparent p-0 h-auto border-b border-zinc-200 mb-8 gap-0"
@@ -65,7 +88,7 @@ export default function LoginPage() {
               </TabsContent>
 
               <TabsContent value="create-account">
-                <CreateAccountForm />
+                <CreateAccountForm onSuccess={handleSignUpSuccess} />
               </TabsContent>
             </Tabs>
           </Suspense>
@@ -75,6 +98,37 @@ export default function LoginPage() {
           HANDCRAFTED IN INDONESIA © 2024
         </p>
       </div>
+
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-md border-0 bg-white p-8 text-center shadow-[0_30px_80px_rgba(0,0,0,0.18)]"
+        >
+          <div className="mx-auto mb-4 flex h-18 w-18 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-inner">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-9 w-9 animate-[pulse_0.8s_ease-in-out_2]"
+              aria-hidden="true"
+            >
+              <path d="M5 12.5 9.2 16.7 19 6.9" />
+            </svg>
+          </div>
+
+          <DialogTitle className="font-headline text-3xl text-zinc-900">
+            Account created
+          </DialogTitle>
+
+          <DialogDescription className="mt-2 text-sm leading-relaxed text-zinc-500">
+            Your registration was successful. We&apos;re taking you back to the
+            sign-in page.
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

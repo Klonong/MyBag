@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
 
-export function useSignUp() {
+export function useSignUp(onSuccess?: () => void) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +23,7 @@ export function useSignUp() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Account created! You can now sign in.", { duration: 6000 });
+        onSuccess?.();
       }
     } finally {
       setLoading(false);

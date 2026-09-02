@@ -186,8 +186,8 @@ export default function CartPage() {
               <Separator className="bg-[#f0e7e3]" />
 
               <div className="flex items-center justify-between">
-                <span className="text-xl lg:text-2xl font-semibold text-[#1b1716]">Total</span>
-                <span className="font-headline text-2xl lg:text-5xl text-[#1b1716]">
+                <span className="text-xl lg:text-xl font-semibold text-[#1b1716]">Total</span>
+                <span className="font-headline text-2xl lg:text-2xl text-[#1b1716]">
                   {formatPrice(subtotal)}
                 </span>
               </div>
@@ -219,10 +219,10 @@ export default function CartPage() {
         }
       >
         <section className="px-0 lg:px-4">
-          <div className="rounded-[1.75rem] border border-[#f2e3df] bg-gradient-to-r from-[#fffaf8] via-[#fff6f2] to-[#f5efe9] p-5 shadow-[0_18px_48px_rgba(101,82,72,0.06)] sm:p-6 lg:p-7">
+          <div className="rounded-[1.75rem] border border-[#f2e3df] bg-linear-to-r from-[#fffaf8] via-[#fff6f2] to-[#f5efe9] p-5 shadow-[0_18px_48px_rgba(101,82,72,0.06)] sm:p-6 lg:p-7">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b86650]">
+                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#b86650]">
                   Your collection
                 </p>
                 <h1 className="mt-2 font-headline text-3xl sm:text-4xl lg:text-5xl leading-none text-[#1d1917]">
