@@ -14,6 +14,7 @@ import { defaultShipping, defaultPayment } from "./_components/types";
 import type { ShippingData, PaymentData } from "./_components/types";
 import useAuth from "@/hooks/useAuth";
 import { cartService } from "@/services/cart.service";
+import { addressService } from "@/services/address.service";
 import type { CartItem } from "./_components/types";
 
 export default function CheckoutPage() {
@@ -22,6 +23,7 @@ export default function CheckoutPage() {
   const [paymentData, setPaymentData] = useState<PaymentData>(defaultPayment);
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
+  const [shippingSubmitting, setShippingSubmitting] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -55,6 +57,35 @@ export default function CheckoutPage() {
     return <BasePage><p className="py-20 text-center text-muted-foreground">Your cart is empty.</p></BasePage>;
   }
 
+  const handleShippingNext = async () => {
+    if (shippingData.addressId) {
+      setStep(1);
+      return;
+    }
+
+    setShippingSubmitting(true);
+    const result = await addressService.create({
+      recipientName: shippingData.fullName,
+      phone: shippingData.phone,
+      addressLine: shippingData.address,
+      addressLine2: shippingData.address2 || undefined,
+      city: shippingData.city,
+      province: shippingData.province,
+      postalCode: shippingData.postalCode,
+      country: shippingData.country,
+    });
+    setShippingSubmitting(false);
+
+    if (result.error || !result.data) {
+      toast.error(result.error?.message || "Unable to save your address.");
+      return;
+    }
+
+    const createdAddress = result.data;
+    setShippingData((prev) => ({ ...prev, addressId: createdAddress.id }));
+    setStep(1);
+  };
+
   return (
     <BasePage>
       <StepIndicator current={step} />
@@ -67,8 +98,8 @@ export default function CheckoutPage() {
             <OrderSummary shippingMethod={shippingData.deliveryMethod} items={items} />
             <div className="lg:hidden mt-6">
               <Button
-                onClick={() => setStep(1)}
-                disabled={!shippingData.fullName || !shippingData.email || !shippingData.address || !shippingData.city || !shippingData.postalCode}
+                onClick={handleShippingNext}
+                disabled={shippingSubmitting || !shippingData.fullName || !shippingData.address || !shippingData.city || !shippingData.postalCode || (!shippingData.addressId && !shippingData.email)}
                 className="w-full h-12 tracking-widest text-xs bg-black text-white hover:bg-zinc-800 rounded-full lg:rounded-none"
               >
                 CONTINUE TO PAYMENT
@@ -82,7 +113,8 @@ export default function CheckoutPage() {
             <ShippingStep
               data={shippingData}
               onChange={(d) => setShippingData((prev) => ({ ...prev, ...d }))}
-              onNext={() => setStep(1)}
+              onNext={handleShippingNext}
+              isSubmitting={shippingSubmitting}
             />
           )}
           {step === 1 && (

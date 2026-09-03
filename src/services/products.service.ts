@@ -47,4 +47,6 @@ export const productsService = {
     ).toString()}`);
   },
   getProductById: (id: string) => api.get<ProductDetail>(`/products/${id}`),
+  updateProduct: (id: string, input: Partial<{ name: string; description: string; price: number; discount: number; categoryId: number; badgeId: number }>) =>
+    api.patch<ProductDetail>(`/products/${id}`, input),
 };

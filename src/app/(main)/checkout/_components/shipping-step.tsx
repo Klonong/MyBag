@@ -10,15 +10,18 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { addressService, type Address } from "@/services/address.service";
 import type { ShippingData } from "./types";
+import { Form } from "@base-ui/react";
 
 export function ShippingStep({
   data,
   onChange,
   onNext,
+  isSubmitting = false,
 }: {
   data: ShippingData;
   onChange: (d: Partial<ShippingData>) => void;
   onNext: () => void;
+  isSubmitting?: boolean;
 }) {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -74,10 +77,18 @@ export function ShippingStep({
   );
 
   const isValid =
-    data.fullName && data.email && data.address && data.city && data.postalCode;
+    data.fullName &&
+    data.address &&
+    data.city &&
+    data.postalCode &&
+    (data.addressId || data.email);
 
   return (
-    <div>
+    <Form
+      onFormSubmit={() => {
+        onNext();
+      }}
+    >
       <h1 className="font-headline text-4xl font-semibold text-primary mb-1">
         Shipping Information
       </h1>
@@ -220,13 +231,13 @@ export function ShippingStep({
 
       <div className="hidden lg:flex justify-end mt-8">
         <Button
-          onClick={onNext}
-          disabled={!isValid}
+          type="submit"
+          disabled={isSubmitting || !isValid}
           className="px-8 h-11 tracking-widest text-xs"
         >
           CONTINUE TO PAYMENT
         </Button>
       </div>
-    </div>
+    </Form>
   );
 }
