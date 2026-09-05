@@ -134,7 +134,7 @@ export default function ProfilePage() {
                       Order #{order.id.slice(0, 8)} · {order.status}
                     </p>
                     <p className="text-muted-foreground text-xs leading-relaxed mt-0.5">
-                      {order.order_items.length} item{order.order_items.length === 1 ? "" : "s"} · {formatPrice(Number(order.total))}
+                      {(order.order_items ?? []).length} item{(order.order_items ?? []).length === 1 ? "" : "s"} · {formatPrice(Number(order.total))}
                     </p>
                   </div>
                   <span className="text-muted-foreground text-xs shrink-0">

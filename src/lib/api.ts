@@ -45,6 +45,11 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+export const SESSION_EXPIRED_EVENT = "session:expired";
+
+/** Endpoints where a 401 is an expected outcome, not an expired session. */
+const AUTH_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/me", "/auth/logout"];
+
 async function request<T>(config: AxiosRequestConfig): Promise<ApiResult<T>> {
   try {
     const res = await client.request<T | ApiEnvelope<T>>(config);
@@ -53,11 +58,20 @@ async function request<T>(config: AxiosRequestConfig): Promise<ApiResult<T>> {
     return { data: isEnvelope<T>(body) ? body.data : (body as T), error: null };
   } catch (err) {
     if (isAxiosError(err)) {
+      const status = err.response?.status ?? 0;
+      const path = config.url?.split("?")[0] ?? "";
+      if (
+        status === 401 &&
+        typeof window !== "undefined" &&
+        !AUTH_ENDPOINTS.some((endpoint) => path.startsWith(endpoint))
+      ) {
+        window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+      }
       const body = err.response?.data;
       const message =
         (body && typeof body === "object" && "message" in body && String(body.message)) ||
         err.message;
-      return { data: null, error: { message, status: err.response?.status ?? 0 } };
+      return { data: null, error: { message, status } };
     }
     const message = err instanceof Error ? err.message : "Network error.";
     return { data: null, error: { message, status: 0 } };

@@ -1,21 +1,103 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BadgeCheck, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
+import { BadgeCheck, Plus } from "lucide-react";
 import { Form } from "@base-ui/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, DataTableSearchInput, DataTableToolbar } from "@/components/ui/data-table";
 import { badgesService, type Badge } from "@/services/badges.service";
-import Link from "next/link";
+import { createBadgeColumns } from "@/app/admin/badges/columns";
+import { useAsyncData } from "@/hooks/useAsyncData";
 
 export default function AdminBadgesPage() {
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: badges,
+    setData: setBadges,
+    loading,
+    error,
+    setError,
+  } = useAsyncData(() => badgesService.list(), [], {
+    initial: [] as Badge[],
+    select: (result) => result.data ?? [],
+  });
   const [name, setName] = useState("");
-  useEffect(() => { void badgesService.list().then((result) => { if (result.error) setError(result.error.message); else setBadges(result.data ?? []); setLoading(false); }); }, []);
-  async function addBadge() { if (!name.trim()) return; const result = await badgesService.create(name.trim()); if (result.error || !result.data) { setError(result.error?.message ?? "Unable to create badge."); return; } setBadges((current) => [...current, result.data as Badge]); setName(""); }
-  async function deleteBadge(id: number) { const result = await badgesService.remove(id); if (result.error) { setError(result.error.message); return; } setBadges((current) => current.filter((item) => item.id !== id)); }
-  return <div className="space-y-7"><div><div className="mb-3 flex size-11 items-center justify-center bg-tertiary/10 text-tertiary"><BadgeCheck className="size-5" /></div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">Catalog structure</p><h1 className="font-headline text-4xl font-bold">Badges</h1><p className="mt-2 text-sm text-zinc-500">Highlight products with labels like Bestseller or Limited.</p></div><div className="flex gap-2"><Form onFormSubmit={addBadge} className="flex max-w-lg flex-1 gap-2"><Input value={name} onChange={(event) => setName(event.target.value)} placeholder="New badge name" aria-label="New badge name" /><Button type="submit"><Plus /> Add badge</Button></Form><Button variant="outline" nativeButton={false} render={<Link href="/admin/badges/new" />}>Create page</Button></div>{error && <p className="text-sm text-red-500">{error}</p>}<div className="overflow-hidden border border-zinc-200 bg-white"><Table><TableHeader><TableRow><TableHead>Badge</TableHead><TableHead>Products</TableHead><TableHead className="w-32" /></TableRow></TableHeader><TableBody>{loading ? <TableRow><TableCell colSpan={3} className="text-center">Loading badges...</TableCell></TableRow> : badges.map((badge) => <TableRow key={badge.id}><TableCell className="font-medium">{badge.name}</TableCell><TableCell className="text-zinc-500">{badge.productCount ?? 0}</TableCell><TableCell><div className="flex items-center justify-end gap-1"><Button size="icon-sm" variant="ghost" nativeButton={false} render={<Link href={`/admin/badges/${badge.id}/edit`} />} aria-label={`Edit ${badge.name}`}>Edit</Button><Button size="icon-sm" variant="ghost" aria-label={`Delete ${badge.name}`} onClick={() => void deleteBadge(badge.id)}><Trash2 className="size-4 text-zinc-400" /></Button></div></TableCell></TableRow>)}</TableBody></Table></div></div>;
+
+  async function addBadge() {
+    if (!name.trim()) return;
+    const result = await badgesService.create(name.trim());
+    if (result.error || !result.data) {
+      setError(result.error?.message ?? "Unable to create badge.");
+      return;
+    }
+    setBadges((current) => [...current, result.data as Badge]);
+    setName("");
+  }
+
+  const deleteBadge = useCallback(
+    async (badge: Badge) => {
+      if (!window.confirm(`Delete "${badge.name}"?`)) return;
+      const result = await badgesService.remove(badge.id);
+      if (result.error) setError(result.error.message);
+      else setBadges((current) => current.filter((item) => item.id !== badge.id));
+    },
+    [setBadges, setError],
+  );
+
+  const columns = useMemo(() => createBadgeColumns({ onDelete: deleteBadge }), [deleteBadge]);
+
+  return (
+    <div className="space-y-7">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <div className="mb-3 flex size-11 items-center justify-center bg-tertiary/10 text-tertiary">
+            <BadgeCheck className="size-5" />
+          </div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">Catalog structure</p>
+          <h1 className="font-headline text-4xl font-bold">Badges</h1>
+          <p className="mt-2 text-sm text-zinc-500">Highlight products with labels like Bestseller or Limited.</p>
+        </div>
+        <Button variant="outline" nativeButton={false} render={<Link href="/admin/badges/new" />}>
+          Create page
+        </Button>
+      </div>
+
+      <Form onFormSubmit={addBadge} className="flex max-w-lg gap-2">
+        <Input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="New badge name"
+          aria-label="New badge name"
+        />
+        <Button type="submit">
+          <Plus /> Add badge
+        </Button>
+      </Form>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      <DataTable
+        columns={columns}
+        data={badges}
+        isLoading={loading}
+        getRowId={(badge) => String(badge.id)}
+        pageSize={10}
+        emptyState="No badges match your search."
+        toolbar={(table) => {
+          const isFiltered = table.getState().columnFilters.length > 0;
+          return (
+            <DataTableToolbar
+              table={table}
+              isFiltered={isFiltered}
+              onResetFilters={() => table.resetColumnFilters()}
+            >
+              <DataTableSearchInput table={table} columnId="name" placeholder="Search badges" />
+            </DataTableToolbar>
+          );
+        }}
+      />
+    </div>
+  );
 }

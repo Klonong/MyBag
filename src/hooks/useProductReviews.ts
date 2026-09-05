@@ -16,10 +16,15 @@ export const useProductReviews = (productId: string | null) => {
 
   useEffect(() => {
     if (!productId) return;
+    let active = true;
     void reviewsService.list(productId).then((result) => {
+      if (!active) return;
       if (result.data) setReviews(result.data.items);
       setLoading(false);
     });
+    return () => {
+      active = false;
+    };
   }, [productId]);
 
   const hasReviewed = Boolean(user && reviews.some((review) => review.user.id === user.id));

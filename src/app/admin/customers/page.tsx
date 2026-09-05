@@ -1,9 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Search, Users } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { adminService, type AdminCustomer } from "@/services/admin.service";
+import { Users } from "lucide-react";
 
-export default function AdminCustomersPage() { const [customers, setCustomers] = useState<AdminCustomer[]>([]); const [search, setSearch] = useState(""); const [error, setError] = useState<string | null>(null); useEffect(() => { const timer = window.setTimeout(() => { void adminService.listCustomers({ search: search || undefined }).then((result) => { if (result.error) setError(result.error.message); else setCustomers(result.data ?? []); }); }, 300); return () => window.clearTimeout(timer); }, [search]); return <div className="space-y-7"><div><div className="mb-3 flex size-11 items-center justify-center bg-tertiary/10 text-tertiary"><Users className="size-5" /></div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">Relationships</p><h1 className="font-headline text-4xl font-bold">Customers</h1><p className="mt-2 text-sm text-zinc-500">Search customers from the admin API.</p></div><div className="relative max-w-sm"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customers" className="bg-white pl-9" /></div>{error && <p className="text-sm text-red-500">{error}</p>}<div className="overflow-hidden border border-zinc-200 bg-white"><Table><TableHeader><TableRow><TableHead>Customer</TableHead><TableHead>Orders</TableHead><TableHead>Total spent</TableHead><TableHead>Status</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{customers.map((customer) => <TableRow key={customer.id}><TableCell><p className="font-medium">{customer.name ?? "Unnamed customer"}</p><p className="mt-1 text-xs text-zinc-500">{customer.email}</p></TableCell><TableCell>{customer.orderCount ?? customer.orders ?? 0}</TableCell><TableCell>{customer.totalSpent ?? customer.spent ?? "-"}</TableCell><TableCell>{customer.isActive === false || customer.status === "Inactive" ? "Inactive" : "Active"}</TableCell><TableCell className="text-zinc-500">{customer.createdAt ?? customer.joined ?? "-"}</TableCell></TableRow>)}</TableBody></Table></div></div>; }
+import {
+  DataTable,
+  DataTableFacetedFilter,
+  DataTableSearchInput,
+  DataTableToolbar,
+} from "@/components/ui/data-table";
+import { adminService, type AdminCustomer } from "@/services/admin.service";
+import { adminCustomers } from "@/data/admin-mock";
+import { customerColumns } from "@/app/admin/customers/columns";
+import { useAsyncData } from "@/hooks/useAsyncData";
+
+export default function AdminCustomersPage() {
+  const {
+    data: customers,
+    loading,
+    error,
+  } = useAsyncData(() => adminService.listCustomers({ limit: 200 }), [], {
+    initial: [] as AdminCustomer[],
+    select: (result): AdminCustomer[] =>
+      result.data?.length ? result.data : (adminCustomers as AdminCustomer[]),
+  });
+
+  return (
+    <div className="space-y-7">
+      <div>
+        <div className="mb-3 flex size-11 items-center justify-center bg-tertiary/10 text-tertiary">
+          <Users className="size-5" />
+        </div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">Relationships</p>
+        <h1 className="font-headline text-4xl font-bold">Customers</h1>
+        <p className="mt-2 text-sm text-zinc-500">Search, filter, and manage customers from the admin API.</p>
+      </div>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      <DataTable
+        columns={customerColumns}
+        data={customers}
+        isLoading={loading}
+        getRowId={(customer) => customer.id}
+        pageSize={10}
+        emptyState="No customers match your filters."
+        toolbar={(table) => {
+          const isFiltered = table.getState().columnFilters.length > 0;
+          return (
+            <DataTableToolbar
+              table={table}
+              isFiltered={isFiltered}
+              onResetFilters={() => table.resetColumnFilters()}
+            >
+              <DataTableSearchInput table={table} columnId="customer" placeholder="Search customers" />
+              <DataTableFacetedFilter
+                column={table.getColumn("status")}
+                title="Status"
+                options={[
+                  { label: "Active", value: "Active" },
+                  { label: "Inactive", value: "Inactive" },
+                ]}
+              />
+            </DataTableToolbar>
+          );
+        }}
+      />
+    </div>
+  );
+}

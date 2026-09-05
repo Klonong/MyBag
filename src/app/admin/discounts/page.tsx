@@ -1,18 +1,91 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Percent, Plus, Trash2 } from "lucide-react";
-import { Form } from "@base-ui/react";
+import { useCallback, useMemo } from "react";
+import Link from "next/link";
+import { Percent, Plus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DataTable,
+  DataTableFacetedFilter,
+  DataTableSearchInput,
+  DataTableToolbar,
+} from "@/components/ui/data-table";
 import { adminService, type AdminDiscount } from "@/services/admin.service";
+import { createDiscountColumns } from "@/app/admin/discounts/columns";
+import { useAsyncData } from "@/hooks/useAsyncData";
 
 export default function AdminDiscountsPage() {
-  const [discounts, setDiscounts] = useState<AdminDiscount[]>([]); const [name, setName] = useState(""); const [code, setCode] = useState(""); const [type, setType] = useState<"percentage" | "fixed">("percentage"); const [error, setError] = useState<string | null>(null);
-  useEffect(() => { void adminService.listDiscounts().then((result) => { if (result.error) setError(result.error.message); else setDiscounts(result.data ?? []); }); }, []);
-  async function addDiscount() { if (!name.trim() || !code.trim()) return; const result = await adminService.createDiscount({ name: name.trim(), code: code.trim().toUpperCase(), type, value: 10, isActive: false }); if (result.error || !result.data) { setError(result.error?.message ?? "Unable to create discount."); return; } setDiscounts((current) => [result.data as AdminDiscount, ...current]); setName(""); setCode(""); }
-  async function deleteDiscount(id: string) { const result = await adminService.deleteDiscount(id); if (result.error) { setError(result.error.message); return; } setDiscounts((current) => current.filter((item) => item.id !== id)); }
-  return <div className="space-y-7"><div><div className="mb-3 flex size-11 items-center justify-center bg-tertiary/10 text-tertiary"><Percent className="size-5" /></div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">Pricing</p><h1 className="font-headline text-4xl font-bold">Discounts</h1><p className="mt-2 text-sm text-zinc-500">Manage promotions connected to the admin API.</p></div><Form onFormSubmit={addDiscount} className="grid gap-2 sm:grid-cols-[1fr_1fr_160px_auto]"><Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Campaign name" /><Input value={code} onChange={(event) => setCode(event.target.value)} placeholder="Promo code" /><Select value={type} onValueChange={(value) => { if (value) setType(value as "percentage" | "fixed"); }}><SelectTrigger className="bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">Percentage</SelectItem><SelectItem value="fixed">Fixed amount</SelectItem></SelectContent></Select><Button type="submit"><Plus /> Add</Button></Form>{error && <p className="text-sm text-red-500">{error}</p>}<div className="overflow-hidden border border-zinc-200 bg-white"><Table><TableHeader><TableRow><TableHead>Campaign</TableHead><TableHead>Code</TableHead><TableHead>Offer</TableHead><TableHead>Status</TableHead><TableHead>Ends</TableHead><TableHead /></TableRow></TableHeader><TableBody>{discounts.map((discount) => <TableRow key={discount.id}><TableCell className="font-medium">{discount.name}</TableCell><TableCell className="font-mono text-xs">{discount.code}</TableCell><TableCell>{discount.type === "percentage" || discount.type === "Percentage" ? `${discount.value}%` : `Rp ${Number(discount.value).toLocaleString("id-ID")}`}</TableCell><TableCell>{discount.status}</TableCell><TableCell className="text-zinc-500">{discount.endsAt ?? discount.ends ?? "-"}</TableCell><TableCell><Button size="icon-sm" variant="ghost" onClick={() => void deleteDiscount(discount.id)} aria-label={`Delete ${discount.name}`}><Trash2 className="size-4" /></Button></TableCell></TableRow>)}</TableBody></Table></div></div>;
+  const {
+    data: discounts,
+    setData: setDiscounts,
+    loading,
+    error,
+    setError,
+  } = useAsyncData(() => adminService.listDiscounts(), [], {
+    initial: [] as AdminDiscount[],
+    select: (result) => result.data ?? [],
+  });
+
+  const deleteDiscount = useCallback(
+    async (discount: AdminDiscount) => {
+      if (!window.confirm(`Delete "${discount.name}"?`)) return;
+      const result = await adminService.deleteDiscount(discount.id);
+      if (result.error) setError(result.error.message);
+      else setDiscounts((current) => current.filter((item) => item.id !== discount.id));
+    },
+    [setDiscounts, setError],
+  );
+
+  const columns = useMemo(() => createDiscountColumns({ onDelete: deleteDiscount }), [deleteDiscount]);
+
+  return (
+    <div className="space-y-7">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <div className="mb-3 flex size-11 items-center justify-center bg-tertiary/10 text-tertiary">
+            <Percent className="size-5" />
+          </div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-tertiary">Pricing</p>
+          <h1 className="font-headline text-4xl font-bold">Discounts</h1>
+          <p className="mt-2 text-sm text-zinc-500">Manage promotions connected to the admin API.</p>
+        </div>
+        <Button nativeButton={false} render={<Link href="/admin/discounts/new" />}>
+          <Plus /> New discount
+        </Button>
+      </div>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      <DataTable
+        columns={columns}
+        data={discounts}
+        isLoading={loading}
+        getRowId={(discount) => discount.id}
+        pageSize={10}
+        emptyState="No discounts match your filters."
+        toolbar={(table) => {
+          const isFiltered = table.getState().columnFilters.length > 0;
+          return (
+            <DataTableToolbar
+              table={table}
+              isFiltered={isFiltered}
+              onResetFilters={() => table.resetColumnFilters()}
+            >
+              <DataTableSearchInput table={table} columnId="name" placeholder="Search campaigns" />
+              <DataTableFacetedFilter
+                column={table.getColumn("status")}
+                title="Status"
+                options={[
+                  { label: "Active", value: "Active" },
+                  { label: "Scheduled", value: "Scheduled" },
+                  { label: "Expired", value: "Expired" },
+                ]}
+              />
+            </DataTableToolbar>
+          );
+        }}
+      />
+    </div>
+  );
 }

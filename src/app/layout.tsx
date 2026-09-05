@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthProvider";
 import { WishlistProvider } from "@/context/WishlistProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { SessionExpiredDialog } from "@/components/base/session-expired-dialog";
 
 const playfairDisplay = Playfair_Display({
   weight: ["400", "500", "700"],
@@ -39,6 +40,7 @@ export default function RootLayout({
           <WishlistProvider>
             {children}
             <Toaster richColors position="top-right" />
+            <SessionExpiredDialog />
           </WishlistProvider>
         </AuthProvider>
       </body>

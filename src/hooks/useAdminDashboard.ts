@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { adminCustomers, adminOrders, adminProducts } from "@/data/admin-mock";
 import {
   adminService,
+  getOrderStatus,
   type AdminCustomer,
   type AdminOrder,
 } from "@/services/admin.service";
@@ -170,7 +171,7 @@ export const useAdminDashboard = () => {
     ? Math.round(
         (orders.filter((order) =>
           ["shipped", "completed", "delivered"].includes(
-            order.status.toLowerCase(),
+            getOrderStatus(order).toLowerCase(),
           ),
         ).length /
           orders.length) *
@@ -188,7 +189,7 @@ export const useAdminDashboard = () => {
   ].map((status) => ({
     name: status,
     value: orders.filter(
-      (order) => order.status.toLowerCase() === status.toLowerCase(),
+      (order) => getOrderStatus(order).toLowerCase() === status.toLowerCase(),
     ).length,
   }));
 

@@ -41,7 +41,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="rounded-lg border border-input p-5">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">Items</p>
             <div className="mt-4 space-y-3">
-              {order.order_items.map((item) => (
+              {(order.order_items ?? []).map((item) => (
                 <div key={item.id} className="flex justify-between gap-3 text-sm">
                   <div>
                     <p className="font-medium text-primary">{item.product_name}</p>

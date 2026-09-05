@@ -60,8 +60,8 @@ export default function OrdersPage() {
                 <div>
                   <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {new Date(order.created_at).toLocaleDateString()} · {order.order_items.length} item
-                    {order.order_items.length === 1 ? "" : "s"}
+                    {new Date(order.created_at).toLocaleDateString()} · {(order.order_items ?? []).length} item
+                    {(order.order_items ?? []).length === 1 ? "" : "s"}
                   </p>
                 </div>
                 <div className="text-right">

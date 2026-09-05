@@ -44,8 +44,11 @@ export const useProductDetail = (productId?: string | string[] | null) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     const fetchProduct = async () => {
       if (!normalizedId) {
+        if (!active) return;
         setProduct(null);
         setSelectedVariantId(null);
         setIsLoading(false);
@@ -54,6 +57,7 @@ export const useProductDetail = (productId?: string | string[] | null) => {
 
       setIsLoading(true);
       const result = await productsService.getProductById(normalizedId);
+      if (!active) return;
 
       if (result.error) {
         console.error("Failed to fetch product:", result.error.message);
@@ -78,6 +82,10 @@ export const useProductDetail = (productId?: string | string[] | null) => {
     };
 
     void fetchProduct();
+
+    return () => {
+      active = false;
+    };
   }, [normalizedId]);
 
   const selectedVariant =

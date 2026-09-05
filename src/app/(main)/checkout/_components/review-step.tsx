@@ -48,7 +48,7 @@ export function ReviewStep({
         <div className="w-full max-w-sm text-left border rounded-lg p-4 mb-8 space-y-2 text-sm">
           <p>Delivery: {order.delivery_method}</p>
           <p>Payment: {order.payment_method}</p>
-          <p>Items: {order.order_items.length}</p>
+          <p>Items: {(order.order_items ?? []).length}</p>
           <Separator />
           <p className="flex justify-between"><span>Subtotal</span><span>{formatPrice(Number(order.subtotal))}</span></p>
           <p className="flex justify-between"><span>Shipping</span><span>{formatPrice(Number(order.shipping_fee))}</span></p>
