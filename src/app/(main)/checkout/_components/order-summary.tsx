@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,28 +7,32 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatPrice } from "@/lib/utils";
+import type { OrderPreview } from "@/services/order.service";
 import type { CartItem } from "./types";
 
 export function OrderSummary({
   shippingMethod,
   items,
+  preview,
+  previewLoading,
+  couponCode,
+  setCouponCode,
+  appliedCode,
+  couponError,
+  applyingCoupon,
+  applyCoupon,
 }: {
   shippingMethod: "standard" | "express";
   items: CartItem[];
+  preview: OrderPreview;
+  previewLoading: boolean;
+  couponCode: string;
+  setCouponCode: (value: string) => void;
+  appliedCode: string | null;
+  couponError: string | null;
+  applyingCoupon: boolean;
+  applyCoupon: () => void;
 }) {
-  const [promo, setPromo] = useState("");
-  const [applied, setApplied] = useState(false);
-
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const shippingFee = 0;
-  const discount = applied ? Math.round(subtotal * 0.1) : 0;
-  const taxable = subtotal - discount;
-  const tax = 0;
-  const total = taxable + shippingFee + tax;
-
   return (
     <aside className="bg-secondary/30 rounded-xl p-4 sm:p-6 lg:sticky lg:top-24">
       <h2 className="font-headline text-xl sm:text-2xl font-semibold text-primary mb-4 sm:mb-5">
@@ -63,21 +66,21 @@ export function OrderSummary({
       <div className="space-y-2 text-sm mb-4">
         <div className="flex justify-between text-muted-foreground">
           <span>Subtotal</span>
-          <span>{formatPrice(subtotal)}</span>
+          <span>{formatPrice(preview.subtotal)}</span>
         </div>
-        {applied && (
+        {appliedCode && preview.discount > 0 && (
           <div className="flex justify-between text-tertiary">
-            <span>Promo (ESTETIKA10)</span>
-            <span>-{formatPrice(discount)}</span>
+            <span>Promo ({appliedCode})</span>
+            <span>-{formatPrice(preview.discount)}</span>
           </div>
         )}
         <div className="flex justify-between text-muted-foreground">
           <span>Shipping ({shippingMethod === "express" ? "Express" : "Standard"})</span>
-          <span>{shippingFee ? formatPrice(shippingFee) : "Calculated by API"}</span>
+          <span>{previewLoading ? "…" : formatPrice(preview.shippingFee)}</span>
         </div>
         <div className="flex justify-between text-muted-foreground">
           <span>Estimated Tax</span>
-          <span>{tax ? formatPrice(tax) : "Calculated by API"}</span>
+          <span>{previewLoading ? "…" : formatPrice(preview.tax)}</span>
         </div>
       </div>
 
@@ -88,7 +91,7 @@ export function OrderSummary({
           Total
         </span>
         <span className="font-headline text-xl font-bold text-primary">
-          {formatPrice(total)}
+          {previewLoading ? "…" : formatPrice(preview.total)}
         </span>
       </div>
 
@@ -98,27 +101,27 @@ export function OrderSummary({
         </p>
         <div className="flex gap-2">
           <Input
-            placeholder="MyBag10"
-            value={promo}
-            onChange={(e) => setPromo(e.target.value)}
+            placeholder="Enter a code"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
             className="text-sm h-10 flex-1"
           />
           <Button
             variant="outline"
             size="sm"
             className="h-10 px-3 sm:px-4 text-xs tracking-widest"
-            onClick={() => {
-              if (promo.toUpperCase() === "ESTETIKA10") setApplied(true);
-            }}
+            disabled={applyingCoupon || !couponCode.trim()}
+            onClick={applyCoupon}
           >
-            APPLY
+            {applyingCoupon ? "..." : "APPLY"}
           </Button>
         </div>
-        {applied && (
+        {appliedCode && (
           <p className="text-xs text-tertiary mt-1.5 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> 10% discount applied
+            <CheckCircle2 className="w-3 h-3" /> Coupon applied
           </p>
         )}
+        {couponError && <p className="text-xs text-destructive mt-1.5">{couponError}</p>}
       </div>
 
       <div className="flex items-center justify-center gap-1.5 text-muted-foreground text-xs mt-4">

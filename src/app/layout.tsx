@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthProvider";
+import { WishlistProvider } from "@/context/WishlistProvider";
 import { Toaster } from "@/components/ui/sonner";
 
 const playfairDisplay = Playfair_Display({
@@ -35,8 +36,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          {children}
-          <Toaster richColors position="top-right" />
+          <WishlistProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </WishlistProvider>
         </AuthProvider>
       </body>
     </html>

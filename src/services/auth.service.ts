@@ -17,4 +17,7 @@ export const authService = {
   signOut: () => api.post<null>("/auth/logout"),
 
   getMe: () => api.get<{ user: AuthUser }>("/auth/me"),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<null>("/auth/change-password", { currentPassword, newPassword }),
 };

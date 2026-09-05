@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatPrice } from "@/lib/utils";
-import { cartService } from "@/services/cart.service";
-import { orderService, type Order } from "@/services/order.service";
+import { useReviewStep } from "@/hooks/useReviewStep";
+import type { OrderPreview } from "@/services/order.service";
 import type { CartItem, ShippingData, PaymentData, PaymentMethod } from "./types";
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
@@ -23,53 +21,20 @@ export function ReviewStep({
   shipping,
   payment,
   items,
+  preview,
+  previewLoading,
+  couponCode,
   onBack,
 }: {
   shipping: ShippingData;
   payment: PaymentData;
   items: CartItem[];
+  preview: OrderPreview;
+  previewLoading: boolean;
+  couponCode: string | null;
   onBack: () => void;
 }) {
-  const [order, setOrder] = useState<Order | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const submitOrder = async () => {
-    if (submitting || !items.length) return;
-    setSubmitting(true);
-    setError(null);
-    const result = await orderService.createSummary({
-      cartItemIds: [...new Set(items.map((item) => item.id))],
-      ...(shipping.addressId ? { addressId: shipping.addressId } : {}),
-      deliveryMethod: shipping.deliveryMethod,
-      paymentMethod: payment.method,
-    });
-
-    if (result.error) {
-      const fallback =
-        result.error.status === 400
-          ? "Please check your selected items and address."
-          : result.error.status === 401
-            ? "Your session has expired. Please sign in again."
-            : result.error.status === 404
-              ? "Your cart could not be found. Please return to your cart."
-              : result.error.status === 500
-                ? "The order could not be created. Please try again."
-                : "Unable to create your order.";
-      setError(result.error.message || fallback);
-      if (result.error.status === 401) toast.error(fallback);
-      setSubmitting(false);
-      return;
-    }
-
-    setOrder(result.data);
-    await cartService.getCart();
-    setSubmitting(false);
-  };
+  const { order, submitting, error, submitOrder } = useReviewStep(shipping, payment, items, couponCode);
 
   if (order) {
     return (
@@ -88,6 +53,9 @@ export function ReviewStep({
           <p className="flex justify-between"><span>Subtotal</span><span>{formatPrice(Number(order.subtotal))}</span></p>
           <p className="flex justify-between"><span>Shipping</span><span>{formatPrice(Number(order.shipping_fee))}</span></p>
           <p className="flex justify-between"><span>Tax</span><span>{formatPrice(Number(order.tax))}</span></p>
+          {Number(order.discount) > 0 && (
+            <p className="flex justify-between text-tertiary"><span>Discount</span><span>-{formatPrice(Number(order.discount))}</span></p>
+          )}
           <p className="flex justify-between font-semibold"><span>Total</span><span>{formatPrice(Number(order.total))}</span></p>
         </div>
         <Link href="/shop">
@@ -191,22 +159,28 @@ export function ReviewStep({
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
-              <span>{formatPrice(subtotal)}</span>
+              <span>{formatPrice(preview.subtotal)}</span>
             </div>
+            {couponCode && preview.discount > 0 && (
+              <div className="flex justify-between text-tertiary">
+                <span>Promo ({couponCode})</span>
+                <span>-{formatPrice(preview.discount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-muted-foreground">
               <span>
                 Shipping ({shipping.deliveryMethod === "express" ? "Express" : "Standard"})
               </span>
-              <span>Calculated by API</span>
+              <span>{previewLoading ? "…" : formatPrice(preview.shippingFee)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Estimated Tax</span>
-              <span>Calculated by API</span>
+              <span>{previewLoading ? "…" : formatPrice(preview.tax)}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between font-semibold text-primary">
               <span className="text-xs tracking-widest uppercase">Total</span>
-              <span className="font-headline text-lg">Calculated by API</span>
+              <span className="font-headline text-lg">{previewLoading ? "…" : formatPrice(preview.total)}</span>
             </div>
           </div>
         </div>

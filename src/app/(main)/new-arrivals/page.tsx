@@ -3,38 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Flame } from "lucide-react";
-import { useEffect, useState } from "react";
 import { BasePage } from "@/components/base";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ui/product-card";
-import { normalizeShopProduct } from "@/hooks/useShopProducts";
-import type { Product } from "@/interfaces";
-import { productsService } from "@/services/products.service";
+import { useNewArrivals } from "@/hooks/useNewArrivals";
 
 export default function NewArrivalsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadProducts = async () => {
-      setIsLoading(true);
-      const result = await productsService.getProductList({
-        page: 1,
-        limit: 12,
-        sort: "newest",
-      });
-
-      if (!result.error && result.data) {
-        setProducts((result.data.items ?? []).map(normalizeShopProduct));
-      }
-
-      setIsLoading(false);
-    };
-
-    void loadProducts();
-  }, []);
-
-  const heroProduct = products[0];
+  const { products, isLoading, heroProduct } = useNewArrivals();
 
   return (
     <BasePage>

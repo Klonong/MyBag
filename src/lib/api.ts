@@ -16,6 +16,29 @@ function isEnvelope<T>(body: unknown): body is ApiEnvelope<T> {
   return !!body && typeof body === "object" && "success" in body && "data" in body;
 }
 
+/** Query-param values; `undefined`/`null`/`""` entries are dropped automatically. */
+export type QueryParams = Record<string, string | number | boolean | undefined | null>;
+
+function buildQuery(params?: QueryParams): string {
+  if (!params) return "";
+  const entries = Object.entries(params).filter(
+    ([, value]) => value !== undefined && value !== null && value !== "",
+  );
+  if (!entries.length) return "";
+  return `?${new URLSearchParams(entries.map(([key, value]) => [key, String(value)])).toString()}`;
+}
+
+/** Reads a list out of a response body, unwrapping `{ items: [...] }` or nested `{ data: ... }` shapes. */
+export function unwrapList<T>(body: unknown): T[] {
+  if (Array.isArray(body)) return body as T[];
+  if (!body || typeof body !== "object") return [];
+  if ("items" in body && Array.isArray((body as { items: unknown }).items)) {
+    return (body as { items: T[] }).items;
+  }
+  if ("data" in body) return unwrapList<T>((body as { data: unknown }).data);
+  return [];
+}
+
 const client = axios.create({
   baseURL: API_URL,
   withCredentials: true,
@@ -42,17 +65,21 @@ async function request<T>(config: AxiosRequestConfig): Promise<ApiResult<T>> {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>({ url: path, method: "GET" }),
-  post: <T>(path: string, body?: unknown) => request<T>({ url: path, method: "POST", data: body }),
-  patch: <T>(path: string, body?: unknown) => request<T>({ url: path, method: "PATCH", data: body }),
-  delete: <T>(path: string) => request<T>({ url: path, method: "DELETE" }),
-  upload: <T>(path: string, formData: FormData) =>
+  get: <T>(path: string, params?: QueryParams) =>
+    request<T>({ url: `${path}${buildQuery(params)}`, method: "GET" }),
+  post: <T>(path: string, body?: unknown, params?: QueryParams) =>
+    request<T>({ url: `${path}${buildQuery(params)}`, method: "POST", data: body }),
+  patch: <T>(path: string, body?: unknown, params?: QueryParams) =>
+    request<T>({ url: `${path}${buildQuery(params)}`, method: "PATCH", data: body }),
+  delete: <T>(path: string, params?: QueryParams) =>
+    request<T>({ url: `${path}${buildQuery(params)}`, method: "DELETE" }),
+  upload: <T>(path: string, formData: FormData, params?: QueryParams) =>
     request<T>({
-      url: path,
+      url: `${path}${buildQuery(params)}`,
       method: "POST",
       data: formData,
       headers: { "Content-Type": "multipart/form-data" },
     }),
 };
 
-export { API_URL };
+export { API_URL, buildQuery };

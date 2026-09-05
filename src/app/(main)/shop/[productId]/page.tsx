@@ -20,13 +20,15 @@ import { Button } from "@/components/ui/button";
 import { products } from "@/data/products";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { HeartIcon, ShoppingCart, ArrowRight } from "lucide-react";
+import { HeartIcon, ShoppingCart, ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { ProductCard } from "@/components/ui/product-card";
 import { Separator } from "@/components/ui/separator";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { formatPrice } from "@/lib/utils";
 import { useProductDetail } from "@/hooks/productHook";
+import { useProductReviews } from "@/hooks/useProductReviews";
 import { toast } from "sonner";
 import { cartService } from "@/services/cart.service";
 
@@ -53,6 +55,18 @@ export default function ProductDetailPage() {
 
   const viewLabels = ["Front", "Side", "Back"];
   const router = useRouter();
+  const {
+    reviews,
+    loading: reviewsLoading,
+    user: reviewUser,
+    hasReviewed,
+    rating: newRating,
+    setRating: setNewRating,
+    comment,
+    setComment,
+    submitting: submittingReview,
+    submitReview,
+  } = useProductReviews(product?.id ?? null);
 
   const handleAddToCart = async () => {
     const variantId = selectedVariant?.id ?? product?.variants?.[0]?.id ?? "1";
@@ -198,6 +212,13 @@ export default function ProductDetailPage() {
             {product.name}
           </h1>
           <p className="text-sm text-gray-500 mt-2">{product.description}</p>
+          {product.rating && product.rating.count > 0 && (
+            <div className="flex items-center gap-1.5 mt-3">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span className="text-sm font-medium text-gray-900">{product.rating.average.toFixed(1)}</span>
+              <span className="text-sm text-gray-500">({product.rating.count} review{product.rating.count === 1 ? "" : "s"})</span>
+            </div>
+          )}
           <p className="text-xl sm:text-2xl font-semibold text-gray-900 mt-5">
             {formatPrice(selectedVariant?.price ?? product.price)}
           </p>
@@ -271,6 +292,73 @@ export default function ProductDetailPage() {
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* ── Reviews ── */}
+      <div className="mt-16 lg:mt-20 pt-8 lg:pt-12 max-w-2xl">
+        <Separator className="mb-8" />
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-6">Reviews</h2>
+
+        {reviewUser && !hasReviewed && (
+          <div className="mb-8 rounded-lg border border-gray-200 p-5">
+            <p className="text-sm font-semibold text-gray-900 mb-3">Write a review</p>
+            <div className="flex gap-1 mb-3">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setNewRating(value)}
+                  aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
+                >
+                  <Star
+                    className={`w-5 h-5 ${value <= newRating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                  />
+                </button>
+              ))}
+            </div>
+            <Textarea
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder="Share your thoughts on this product (optional)"
+              rows={3}
+              className="mb-3"
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={submittingReview}
+              onClick={() => void submitReview()}
+            >
+              {submittingReview ? "Submitting..." : "Submit review"}
+            </Button>
+          </div>
+        )}
+
+        {reviewsLoading ? (
+          <p className="text-sm text-gray-500">Loading reviews...</p>
+        ) : reviews.length === 0 ? (
+          <p className="text-sm text-gray-500">No reviews yet. Be the first to share your thoughts.</p>
+        ) : (
+          <div className="space-y-5">
+            {reviews.map((review) => (
+              <div key={review.id} className="border-b border-gray-100 pb-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Star
+                        key={value}
+                        className={`w-3.5 h-3.5 ${value <= review.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{review.user.name ?? "Anonymous"}</span>
+                </div>
+                {review.comment && <p className="text-sm text-gray-600">{review.comment}</p>}
+                <p className="text-xs text-gray-400 mt-1">{new Date(review.createdAt).toLocaleDateString()}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Similar Products ── */}

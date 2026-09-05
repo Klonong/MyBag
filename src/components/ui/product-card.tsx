@@ -2,15 +2,14 @@
 
 import type { Product } from "@/interfaces";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { HeartIcon, ShoppingCart } from "lucide-react";
+import { HeartIcon, ShoppingCart, Star } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
-import { wishlistService } from "@/services/wishlist.service";
 import useAuth from "@/hooks/useAuth";
+import { useWishlistContext } from "@/context/WishlistProvider";
 import { useRouter } from "next/navigation";
 
 interface ProductCardProps {
@@ -21,26 +20,8 @@ interface ProductCardProps {
 export function ProductCard({ product, onClick }: ProductCardProps) {
   const { user, loading, refresh } = useAuth();
   const router = useRouter();
-  const [isSaved, setIsSaved] = useState(false);
-
-  useEffect(() => {
-    if (!user || loading) return;
-
-    const syncWishlistState = async () => {
-      const result = await wishlistService.getWishlist();
-      if (result.error) {
-        setIsSaved(false);
-        return;
-      }
-
-      const saved = (result.data?.items ?? []).some(
-        (item) => item.product?.id === product.id,
-      );
-      setIsSaved(saved);
-    };
-
-    void syncWishlistState();
-  }, [loading, product.id, user]);
+  const { isWishlisted, toggleWishlist } = useWishlistContext();
+  const isSaved = isWishlisted(product.id);
 
   const handleAddToCart = async () => {
     const defaultVariant = product.variants?.[0];
@@ -79,41 +60,14 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       return;
     }
 
-    if (isSaved) {
-      const result = await wishlistService.getWishlist();
-      if (result.error) {
-        toast.error(result.error.message || "Unable to load wishlist.");
-        return;
-      }
-
-      const savedItem = (result.data?.items ?? []).find(
-        (item) => item.product?.id === product.id,
+    try {
+      const saved = await toggleWishlist(product.id);
+      toast.success(
+        saved ? `${product.name} added to wishlist.` : `${product.name} removed from wishlist.`,
       );
-
-      if (!savedItem?.id) {
-        toast.error("Wishlist item not found.");
-        return;
-      }
-
-      const removeResult = await wishlistService.removeItem(savedItem.id);
-      if (removeResult.error) {
-        toast.error(removeResult.error.message || "Unable to remove item from wishlist.");
-        return;
-      }
-
-      setIsSaved(false);
-      toast.success(`${product.name} removed from wishlist.`);
-      return;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update wishlist.");
     }
-
-    const result = await wishlistService.addItem(product.id);
-    if (result.error) {
-      toast.error(result.error.message || "Unable to add item to wishlist.");
-      return;
-    }
-
-    setIsSaved(true);
-    toast.success(`${product.name} added to wishlist.`);
   };
 
   return (
@@ -139,6 +93,14 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             {product.name}
           </h3>
           <p className="text-xs text-gray-600 mb-2">{product.description}</p>
+          {product.rating && product.rating.count > 0 && (
+            <div className="flex items-center gap-1 mb-1">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span className="text-xs text-gray-600">
+                {product.rating.average.toFixed(1)} ({product.rating.count})
+              </span>
+            </div>
+          )}
           <p className="text-sm font-semibold text-gray-900">
             {formatPrice(product.price)}
           </p>

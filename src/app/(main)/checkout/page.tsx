@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { BasePage, RightAsideLayout } from "@/components/base";
 import { StepIndicator } from "./_components/step-indicator";
 import { OrderSummary } from "./_components/order-summary";
@@ -10,81 +7,36 @@ import { ShippingStep } from "./_components/shipping-step";
 import { PaymentStep } from "./_components/payment-step";
 import { ReviewStep } from "./_components/review-step";
 import { Button } from "@/components/ui/button";
-import { defaultShipping, defaultPayment } from "./_components/types";
-import type { ShippingData, PaymentData } from "./_components/types";
-import useAuth from "@/hooks/useAuth";
-import { cartService } from "@/services/cart.service";
-import { addressService } from "@/services/address.service";
-import type { CartItem } from "./_components/types";
+import { useCheckout } from "@/hooks/useCheckout";
 
 export default function CheckoutPage() {
-  const [step, setStep] = useState(0);
-  const [shippingData, setShippingData] = useState<ShippingData>(defaultShipping);
-  const [paymentData, setPaymentData] = useState<PaymentData>(defaultPayment);
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [cartLoading, setCartLoading] = useState(true);
-  const [shippingSubmitting, setShippingSubmitting] = useState(false);
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const {
+    step,
+    setStep,
+    shippingData,
+    updateShipping,
+    paymentData,
+    updatePayment,
+    items,
+    shippingSubmitting,
+    isShippingValid,
+    isReady,
+    handleShippingNext,
+    couponCode,
+    setCouponCode,
+    appliedCode,
+    couponError,
+    applyingCoupon,
+    applyCoupon,
+    preview,
+    previewLoading,
+  } = useCheckout();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login?redirect=/checkout");
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (!user) return;
-    void cartService.getCart().then((result) => {
-      if (result.error) toast.error(result.error.message || "Unable to load your cart.");
-      setItems(
-        (result.data?.items ?? []).map((item) => ({
-          id: String(item.id),
-          name: item.product?.name ?? "Artisan Bag",
-          variant: item.color?.name ?? "Selected variant",
-          price: Number(item.product?.finalPrice ?? item.product?.price ?? 0),
-          quantity: item.quantity,
-          image: item.color?.product_color_images?.[0]?.image_url ?? item.product?.product_images?.[0]?.image_url ?? "",
-        })),
-      );
-      setCartLoading(false);
-    });
-  }, [user]);
-
-  if (loading || !user || cartLoading) return null;
+  if (!isReady) return null;
 
   if (!items.length) {
     return <BasePage><p className="py-20 text-center text-muted-foreground">Your cart is empty.</p></BasePage>;
   }
-
-  const handleShippingNext = async () => {
-    if (shippingData.addressId) {
-      setStep(1);
-      return;
-    }
-
-    setShippingSubmitting(true);
-    const result = await addressService.create({
-      recipientName: shippingData.fullName,
-      phone: shippingData.phone,
-      addressLine: shippingData.address,
-      addressLine2: shippingData.address2 || undefined,
-      city: shippingData.city,
-      province: shippingData.province,
-      postalCode: shippingData.postalCode,
-      country: shippingData.country,
-    });
-    setShippingSubmitting(false);
-
-    if (result.error || !result.data) {
-      toast.error(result.error?.message || "Unable to save your address.");
-      return;
-    }
-
-    const createdAddress = result.data;
-    setShippingData((prev) => ({ ...prev, addressId: createdAddress.id }));
-    setStep(1);
-  };
 
   return (
     <BasePage>
@@ -95,11 +47,22 @@ export default function CheckoutPage() {
         className="gap-8 lg:gap-10 xl:gap-14"
         aside={
           <div className="flex flex-col">
-            <OrderSummary shippingMethod={shippingData.deliveryMethod} items={items} />
+            <OrderSummary
+              shippingMethod={shippingData.deliveryMethod}
+              items={items}
+              preview={preview}
+              previewLoading={previewLoading}
+              couponCode={couponCode}
+              setCouponCode={setCouponCode}
+              appliedCode={appliedCode}
+              couponError={couponError}
+              applyingCoupon={applyingCoupon}
+              applyCoupon={applyCoupon}
+            />
             <div className="lg:hidden mt-6">
               <Button
                 onClick={handleShippingNext}
-                disabled={shippingSubmitting || !shippingData.fullName || !shippingData.address || !shippingData.city || !shippingData.postalCode || (!shippingData.addressId && !shippingData.email)}
+                disabled={shippingSubmitting || !isShippingValid}
                 className="w-full h-12 tracking-widest text-xs bg-black text-white hover:bg-zinc-800 rounded-full lg:rounded-none"
               >
                 CONTINUE TO PAYMENT
@@ -112,7 +75,7 @@ export default function CheckoutPage() {
           {step === 0 && (
             <ShippingStep
               data={shippingData}
-              onChange={(d) => setShippingData((prev) => ({ ...prev, ...d }))}
+              onChange={updateShipping}
               onNext={handleShippingNext}
               isSubmitting={shippingSubmitting}
             />
@@ -120,7 +83,7 @@ export default function CheckoutPage() {
           {step === 1 && (
             <PaymentStep
               data={paymentData}
-              onChange={(d) => setPaymentData((prev) => ({ ...prev, ...d }))}
+              onChange={updatePayment}
               onNext={() => setStep(2)}
               onBack={() => setStep(0)}
             />
@@ -130,6 +93,9 @@ export default function CheckoutPage() {
               shipping={shippingData}
               payment={paymentData}
               items={items}
+              preview={preview}
+              previewLoading={previewLoading}
+              couponCode={appliedCode}
               onBack={() => setStep(1)}
             />
           )}

@@ -4,6 +4,9 @@ import type { AuthUser } from "@/interfaces";
 export type ProfileUpdate = {
   name?: string;
   phone?: string;
+  avatarUrl?: string;
+  bio?: string;
+  location?: string;
 };
 
 export const profileService = {

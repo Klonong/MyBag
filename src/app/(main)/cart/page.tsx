@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -12,7 +11,6 @@ import {
   Landmark,
   Truck,
 } from "lucide-react";
-import { toast } from "sonner";
 import { BasePageCenter, RightAsideLayout } from "@/components/base";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,137 +28,23 @@ import {
 } from "@/components/ui/dialog";
 import { AuthRequiredDialog } from "@/components/ui/auth-required-dialog";
 import { formatPrice } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import useAuth from "@/hooks/useAuth";
-import { cartService, type CartItem as CartApiItem } from "@/services/cart.service";
-
-type CartItem = {
-  id: string;
-  name: string;
-  subtitle: string;
-  price: number;
-  originalPrice?: number;
-  quantity: number;
-  image: string;
-};
-
-const toCartItemView = (item: CartApiItem): CartItem => {
-  const product = item.product;
-  const color = item.color;
-  const productImage =
-    color?.product_color_images?.[0]?.image_url ??
-    product?.product_images?.[0]?.image_url ??
-    "";
-
-  return {
-    id: String(item.id),
-    name: product?.name ?? "Artisan Bag",
-    subtitle: color?.name
-      ? `Color: ${color.name}`
-      : product?.categories?.name
-        ? product.categories.name
-        : "Handcrafted piece",
-    price: Number(product?.finalPrice ?? product?.price ?? 0),
-    quantity: item.quantity ?? 1,
-    image: productImage,
-  };
-};
+import { useCart } from "@/hooks/useCart";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [authDialogOpen, setAuthDialogOpen] = useState(false);
-  const [cartSubtotal, setCartSubtotal] = useState(0);
-  const { user } = useAuth();
-  const router = useRouter();
-
-  const loadCart = async () => {
-    setLoading(true);
-    const result = await cartService.getCart();
-
-    if (result.error) {
-      toast.error(result.error.message || "Unable to load your cart.");
-      setItems([]);
-      setCartSubtotal(0);
-      setLoading(false);
-      return;
-    }
-
-    const nextItems = (result.data?.items ?? []).map(toCartItemView);
-    setItems(nextItems);
-    setSelectedItemIds(nextItems.map((item) => item.id));
-    setCartSubtotal(Number(result.data?.subtotal ?? 0));
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    const fetchCart = async () => {
-      await loadCart();
-    };
-
-    void fetchCart();
-  }, []);
-
-  const allItemsSelected = items.length > 0 && selectedItemIds.length === items.length;
-  const subtotal = useMemo(() => {
-    if (allItemsSelected) {
-      return cartSubtotal || items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    }
-
-    return items.reduce(
-      (sum, item) =>
-        selectedItemIds.includes(item.id) ? sum + item.price * item.quantity : sum,
-      0,
-    );
-  }, [allItemsSelected, cartSubtotal, items, selectedItemIds]);
-
-  const refreshCart = async () => {
-    await loadCart();
-  };
-
-  const increaseQty = async (id: string) => {
-    const cartItem = items.find((item) => item.id === id);
-    if (!cartItem) return;
-
-    const result = await cartService.updateItem(id, cartItem.quantity + 1);
-    if (result.error) {
-      toast.error(result.error.message || "Unable to update quantity.");
-      return;
-    }
-
-    await refreshCart();
-  };
-
-  const decreaseQty = async (id: string) => {
-    const cartItem = items.find((item) => item.id === id);
-    if (!cartItem) return;
-
-    if (cartItem.quantity <= 1) {
-      await removeItem(id);
-      return;
-    }
-
-    const result = await cartService.updateItem(id, cartItem.quantity - 1);
-    if (result.error) {
-      toast.error(result.error.message || "Unable to update quantity.");
-      return;
-    }
-
-    await refreshCart();
-  };
-
-  const removeItem = async (id: string) => {
-    const result = await cartService.removeItem(id);
-
-    if (result.error) {
-      toast.error(result.error.message || "Unable to remove item.");
-      return;
-    }
-
-    toast.success("Item removed from your bag.");
-    await refreshCart();
-  };
+  const {
+    items,
+    selectedItemIds,
+    setSelectedItemIds,
+    loading,
+    authDialogOpen,
+    setAuthDialogOpen,
+    allItemsSelected,
+    subtotal,
+    increaseQty,
+    decreaseQty,
+    removeItem,
+    handleCheckoutClick,
+  } = useCart();
 
   return (
     <BasePageCenter>
@@ -179,7 +63,9 @@ export default function CartPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-[#5d5855]">Subtotal</span>
-                  <span className="font-medium text-[#1b1716]">{formatPrice(subtotal)}</span>
+                  <span className="font-medium text-[#1b1716]">
+                    {formatPrice(subtotal)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#5d5855]">Shipping</span>
@@ -189,27 +75,25 @@ export default function CartPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#5d5855]">Estimated Tax</span>
-                  <span className="font-medium text-[#1b1716]">{formatPrice(0)}</span>
+                  <span className="font-medium text-[#1b1716]">
+                    {formatPrice(0)}
+                  </span>
                 </div>
               </div>
 
               <Separator className="bg-[#f0e7e3]" />
 
               <div className="flex items-center justify-between">
-                <span className="text-xl lg:text-xl font-semibold text-[#1b1716]">Total</span>
+                <span className="text-xl lg:text-xl font-semibold text-[#1b1716]">
+                  Total
+                </span>
                 <span className="font-headline text-2xl lg:text-2xl text-[#1b1716]">
                   {formatPrice(subtotal)}
                 </span>
               </div>
 
               <Button
-                onClick={() => {
-                  if (!user) {
-                    setAuthDialogOpen(true);
-                  } else {
-                    router.push("/checkout");
-                  }
-                }}
+                onClick={handleCheckoutClick}
                 className="h-12 w-full rounded-full bg-[#1b1716] text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[#3b2f2a]"
               >
                 Proceed to Checkout
@@ -244,7 +128,8 @@ export default function CartPage() {
               </div>
             </div>
             <p className="mt-4 max-w-xl text-sm leading-7 text-[#544d49]">
-              Every piece in your archive is handcrafted with intention. Review your selection before proceeding to finalization.
+              Every piece in your archive is handcrafted with intention. Review
+              your selection before proceeding to finalization.
             </p>
           </div>
 
@@ -254,11 +139,16 @@ export default function CartPage() {
             </div>
           ) : items.length === 0 ? (
             <div className="mt-8 rounded-[1.75rem] border border-dashed border-[#ead7cf] bg-[#fffaf7] p-8 text-center shadow-[0_16px_40px_rgba(98,79,70,0.04)]">
-              <p className="text-xl font-semibold text-[#1d1917]">Your bag is empty.</p>
+              <p className="text-xl font-semibold text-[#1d1917]">
+                Your bag is empty.
+              </p>
               <p className="mt-2 text-sm text-[#625d5a]">
                 Add a few handcrafted pieces to begin your collection.
               </p>
-              <Link href="/shop" className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#965f4d] hover:text-[#7d4f42]">
+              <Link
+                href="/shop"
+                className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#965f4d] hover:text-[#7d4f42]"
+              >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Continue browsing
               </Link>
@@ -270,7 +160,9 @@ export default function CartPage() {
                   id="select-all-cart-items"
                   checked={allItemsSelected}
                   onCheckedChange={(checked) => {
-                    setSelectedItemIds(checked ? items.map((item) => item.id) : []);
+                    setSelectedItemIds(
+                      checked ? items.map((item) => item.id) : [],
+                    );
                   }}
                 />
                 <label
@@ -281,9 +173,15 @@ export default function CartPage() {
                 </label>
               </div>
               {items.map((item, index) => (
-                <div key={item.id} className="rounded-[1.5rem] border border-[#f1e3de] bg-white p-3 shadow-[0_12px_30px_rgba(93,74,66,0.04)] sm:p-4">
+                <div
+                  key={item.id}
+                  className="rounded-[1.5rem] border border-[#f1e3de] bg-white p-3 shadow-[0_12px_30px_rgba(93,74,66,0.04)] sm:p-4"
+                >
                   <div className="grid grid-cols-[100px_1fr] gap-3 sm:grid-cols-[120px_1fr] sm:gap-4 md:grid-cols-[140px_1fr] md:gap-6">
-                    <AspectRatio ratio={1} className="overflow-hidden rounded-[1rem] bg-[#f5efe9]">
+                    <AspectRatio
+                      ratio={1}
+                      className="overflow-hidden rounded-[1rem] bg-[#f5efe9]"
+                    >
                       <Image
                         src={item.image || "/placeholder-product.jpg"}
                         alt={item.name}
@@ -333,7 +231,9 @@ export default function CartPage() {
                               </DialogDescription>
                             </DialogHeader>
                             <DialogFooter>
-                              <Button variant="outline" type="button">Cancel</Button>
+                              <Button variant="outline" type="button">
+                                Cancel
+                              </Button>
                               <Button
                                 variant="destructive"
                                 type="button"
@@ -390,7 +290,9 @@ export default function CartPage() {
                       </div>
                     </div>
                   </div>
-                  {index < items.length - 1 && <Separator className="mt-5 bg-[#f2e7e2]" />}
+                  {index < items.length - 1 && (
+                    <Separator className="mt-5 bg-[#f2e7e2]" />
+                  )}
                 </div>
               ))}
             </div>

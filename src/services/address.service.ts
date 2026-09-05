@@ -33,4 +33,8 @@ export type Address = {
 export const addressService = {
   list: () => api.get<Address[]>("/addresses"),
   create: (address: CreateAddressInput) => api.post<Address>("/addresses", address),
+  update: (id: string, address: Partial<CreateAddressInput>) =>
+    api.patch<Address>(`/addresses/${id}`, address),
+  remove: (id: string) => api.delete<void>(`/addresses/${id}`),
+  setDefault: (id: string) => api.patch<Address>(`/addresses/${id}/default`),
 };

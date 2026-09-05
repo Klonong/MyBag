@@ -27,6 +27,7 @@ export const normalizeProductDetail = (item: ProductDetail): Product => {
     badge: item.badges?.name ?? undefined,
     category: item.categories?.name ?? "Uncategorized",
     variants: variantImages,
+    rating: item.rating,
   };
 };
 

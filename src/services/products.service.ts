@@ -18,6 +18,26 @@ export type ProductListQuery = {
   sort?: ProductSort;
 };
 
+export type UpdateProductColorInput = {
+  id?: number;
+  name?: string;
+  hexCode?: string;
+  stock?: number;
+  imageUrls?: string[];
+};
+
+export type UpdateProductInput = Partial<{
+  name: string;
+  description: string;
+  price: number;
+  discount: number;
+  categoryId: number;
+  badgeId: number;
+  productImageUrls: string[];
+  colors: UpdateProductColorInput[];
+  removeColorIds: number[];
+}>;
+
 export const productsService = {
   getProductList: ({
     page = 1,
@@ -28,25 +48,19 @@ export const productsService = {
     maxPrice,
     search,
     sort = "newest",
-  }: ProductListQuery = {}) => {
-    const params = Object.fromEntries(
-      Object.entries({
-        page,
-        limit,
-        categoryId,
-        color,
-        minPrice,
-        maxPrice,
-        search,
-        sort,
-      }).filter(([, value]) => value !== undefined && value !== "" && value !== null),
-    );
-
-    return api.get<ProductListResponse>(`/products?${new URLSearchParams(
-      Object.entries(params).map(([key, value]) => [key, String(value)]),
-    ).toString()}`);
-  },
+  }: ProductListQuery = {}) =>
+    api.get<ProductListResponse>("/products", {
+      page,
+      limit,
+      categoryId,
+      color,
+      minPrice,
+      maxPrice,
+      search,
+      sort,
+    }),
   getProductById: (id: string) => api.get<ProductDetail>(`/products/${id}`),
-  updateProduct: (id: string, input: Partial<{ name: string; description: string; price: number; discount: number; categoryId: number; badgeId: number }>) =>
+  updateProduct: (id: string, input: UpdateProductInput) =>
     api.patch<ProductDetail>(`/products/${id}`, input),
+  deleteProduct: (id: string) => api.delete<void>(`/products/${id}`),
 };

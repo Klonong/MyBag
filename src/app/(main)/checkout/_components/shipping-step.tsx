@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Truck, Zap, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { addressService, type Address } from "@/services/address.service";
+import { useShippingStep } from "@/hooks/useShippingStep";
 import type { ShippingData } from "./types";
 import { Form } from "@base-ui/react";
 
@@ -23,35 +21,15 @@ export function ShippingStep({
   onNext: () => void;
   isSubmitting?: boolean;
 }) {
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const {
+    selectedAddress,
+    showForm,
+    savedAddresses,
+    handleSelectAddress,
+    handleEnterNewAddress,
+    isValid,
+  } = useShippingStep(data, onChange);
 
-  useEffect(() => {
-    void addressService.list().then((result) => {
-      if (result.error) {
-        toast.error(result.error.message || "Unable to load saved addresses.");
-        return;
-      }
-      setSavedAddresses(result.data ?? []);
-    });
-  }, []);
-
-  const handleSelectAddress = (addr: Address) => {
-    setSelectedAddress(addr.id);
-    setShowForm(false);
-    onChange({
-      addressId: addr.id,
-      fullName: addr.recipient_name,
-      phone: addr.phone,
-      address: addr.address_line,
-      address2: addr.address_line2 ?? "",
-      city: addr.city,
-      province: addr.province,
-      postalCode: addr.postal_code,
-      country: addr.country,
-    });
-  };
   const field = (
     label: string,
     key: keyof ShippingData,
@@ -75,13 +53,6 @@ export function ShippingStep({
       />
     </div>
   );
-
-  const isValid =
-    data.fullName &&
-    data.address &&
-    data.city &&
-    data.postalCode &&
-    (data.addressId || data.email);
 
   return (
     <Form
@@ -150,10 +121,7 @@ export function ShippingStep({
           <Separator className="flex-1" />
           <button
             type="button"
-            onClick={() => {
-              setSelectedAddress(null);
-              setShowForm(true);
-            }}
+            onClick={handleEnterNewAddress}
             className="text-xs text-muted-foreground hover:text-primary tracking-widest uppercase transition-colors shrink-0"
           >
             Or Enter New Address

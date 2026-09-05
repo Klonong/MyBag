@@ -1,45 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Package, Settings, MapPin, Truck, Star, Heart } from "lucide-react";
+import { Package, Settings, MapPin, Truck, Heart } from "lucide-react";
 import { BasePage } from "@/components/base";
-import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { formatPrice } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import useAuth from "@/hooks/useAuth";
-
-const recentActivity = [
-  {
-    id: "1",
-    icon: Truck,
-    title: "Order #EST-2049 Shipped",
-    description:
-      "Your 'Teak Minimalist Chair' is on its way to your primary address.",
-    time: "2h ago",
-  },
-  {
-    id: "2",
-    icon: Star,
-    title: "Product Reviewed",
-    description: "You shared your thoughts on the 'Woven Bamboo Lamp'.",
-    time: "Yesterday",
-  },
-  {
-    id: "3",
-    icon: Package,
-    title: "Order #EST-2031 Delivered",
-    description: "Your 'Karsa Grain Tote' has been delivered successfully.",
-    time: "3 days ago",
-  },
-];
-
-const wishlistProducts = products.slice(0, 4);
+import { useProfile } from "@/hooks/useProfile";
+import { useWishlist } from "@/hooks/useWishlist";
+import { orderService, type Order } from "@/services/order.service";
 
 const quickLinks = [
   {
@@ -64,18 +37,18 @@ const quickLinks = [
 ];
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user, profile, loading } = useAuth();
+  const { router, user, loading, displayName } = useProfile();
+  const { items: wishlistItems } = useWishlist();
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login?redirect=/profile");
-    }
-  }, [user, loading, router]);
+    if (!user) return;
+    void orderService.list({ limit: 3 }).then((result) => {
+      if (result.data) setRecentOrders(result.data.items);
+    });
+  }, [user]);
 
   if (loading || !user) return null;
-
-  const displayName = profile?.name ?? user.email?.split("@")[0] ?? "Member";
 
   return (
     <BasePage>
@@ -84,16 +57,13 @@ export default function ProfilePage() {
           <div className="relative">
             <div className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 rounded-full overflow-hidden border-2 border-secondary">
               <Image
-                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&fit=crop&crop=face"
+                src={user.avatarUrl || "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&fit=crop&crop=face"}
                 alt="Profile"
                 width={96}
                 height={96}
                 className="object-cover w-full h-full"
               />
             </div>
-            <button className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full w-6 h-6 sm:w-7 flex items-center justify-center text-xs hover:opacity-80 transition-opacity">
-              ✎
-            </button>
           </div>
           <div>
             <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-semibold text-primary mb-1">
@@ -139,36 +109,41 @@ export default function ProfilePage() {
               Recent Activity
             </h2>
             <Link
-              href="#"
+              href="/orders"
               className="text-sm text-primary underline underline-offset-4 hover:text-tertiary transition-colors"
             >
               View All
             </Link>
           </div>
           <Separator className="mb-4" />
-          <div className="flex flex-col gap-3">
-            {recentActivity.map(
-              ({ id, icon: Icon, title, description, time }) => (
-                <div
-                  key={id}
+          {recentOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No orders yet.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {recentOrders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/orders/${order.id}`}
                   className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-secondary/60 bg-card hover:shadow-sm transition-shadow"
                 >
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" strokeWidth={1.5} />
+                    <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-primary text-xs sm:text-sm">{title}</p>
+                    <p className="font-medium text-primary text-xs sm:text-sm">
+                      Order #{order.id.slice(0, 8)} · {order.status}
+                    </p>
                     <p className="text-muted-foreground text-xs leading-relaxed mt-0.5">
-                      {description}
+                      {order.order_items.length} item{order.order_items.length === 1 ? "" : "s"} · {formatPrice(Number(order.total))}
                     </p>
                   </div>
                   <span className="text-muted-foreground text-xs shrink-0">
-                    {time}
+                    {new Date(order.created_at).toLocaleDateString()}
                   </span>
-                </div>
-              ),
-            )}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Wishlist */}
@@ -178,43 +153,47 @@ export default function ProfilePage() {
               Wishlist
             </h2>
             <Link
-              href="#"
+              href="/wishlist"
               className="text-sm text-primary underline underline-offset-4 hover:text-tertiary transition-colors"
             >
               View All
             </Link>
           </div>
           <Separator className="mb-4" />
-          <div className="grid grid-cols-2 gap-3">
-            {wishlistProducts.map((product) => (
-              <Link
-                key={product.id}
-                href={`/shop/${product.id}`}
-                className="group relative rounded-lg overflow-hidden border border-secondary/60 hover:shadow-md transition-shadow"
-              >
-                <AspectRatio ratio={1}>
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </AspectRatio>
-                <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-colors">
-                  <Heart className="w-4 h-4 text-tertiary fill-tertiary" />
-                </button>
-                <div className="p-2 sm:p-3 bg-card">
-                  <p className="font-medium text-primary text-xs sm:text-sm truncate">
-                    {product.name}
-                  </p>
-                  <p className="text-muted-foreground text-xs mt-0.5">
-                    {formatPrice(product.price)}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {wishlistItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Your wishlist is empty.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {wishlistItems.slice(0, 4).map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/shop/${product.id}`}
+                  className="group relative rounded-lg overflow-hidden border border-secondary/60 hover:shadow-md transition-shadow"
+                >
+                  <AspectRatio ratio={1}>
+                    <Image
+                      src={product.image || "/placeholder-product.jpg"}
+                      alt={product.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </AspectRatio>
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition-colors">
+                    <Heart className="w-4 h-4 text-tertiary fill-tertiary" />
+                  </button>
+                  <div className="p-2 sm:p-3 bg-card">
+                    <p className="font-medium text-primary text-xs sm:text-sm truncate">
+                      {product.name}
+                    </p>
+                    <p className="text-muted-foreground text-xs mt-0.5">
+                      {formatPrice(product.price)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </BasePage>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,22 +8,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useLoginPage, type LoginTab } from "@/hooks/useLoginPage";
 import { SignInForm } from "./_components/sign-in-form";
 import { CreateAccountForm } from "./_components/create-account-form";
 
 export default function LoginPage() {
-  const [activeTab, setActiveTab] = useState<"sign-in" | "create-account">(
-    "sign-in"
-  );
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-
-  const handleSignUpSuccess = () => {
-    setShowSuccessDialog(true);
-    window.setTimeout(() => {
-      setShowSuccessDialog(false);
-      setActiveTab("sign-in");
-    }, 2000);
-  };
+  const {
+    activeTab,
+    setActiveTab,
+    showSuccessDialog,
+    setShowSuccessDialog,
+    handleSignUpSuccess,
+  } = useLoginPage();
 
   return (
     <div className="flex min-h-screen">
@@ -62,7 +58,7 @@ export default function LoginPage() {
           <Suspense fallback={<div className="h-64" />}>
             <Tabs
               value={activeTab}
-              onValueChange={(value) => setActiveTab(value as "sign-in" | "create-account")}
+              onValueChange={(value) => setActiveTab(value as LoginTab)}
               className="w-full"
             >
               <TabsList

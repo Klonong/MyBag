@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
+  BadgeCheck,
   BarChart3,
   Boxes,
   FolderTree,
@@ -31,6 +32,7 @@ export default function AdminLayout({
     { href: "/admin", label: "Overview", icon: BarChart3 },
     { href: "/admin/products", label: "Products", icon: ShoppingBag },
     { href: "/admin/categories", label: "Categories", icon: FolderTree },
+    { href: "/admin/badges", label: "Badges", icon: BadgeCheck },
     { href: "/admin/discounts", label: "Discounts", icon: Percent },
     { href: "/admin/orders", label: "Orders", icon: ReceiptText },
     { href: "/admin/customers", label: "Customers", icon: Users },

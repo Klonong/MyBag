@@ -18,6 +18,7 @@ export interface Product {
   category: string;
   variants?: ProductVariant[];
   material?: string[];
+  rating?: ProductRating;
 }
 
 export interface ProductListMeta {
@@ -40,6 +41,11 @@ export interface ProductColor {
   product_color_images?: ProductColorImage[];
 }
 
+export interface ProductRating {
+  average: number;
+  count: number;
+}
+
 export interface ProductDetail {
   id: string;
   name: string;
@@ -50,6 +56,7 @@ export interface ProductDetail {
   badges?: { id?: number; name?: string } | null;
   product_images?: ProductColorImage[];
   product_colors?: ProductColor[];
+  rating?: ProductRating;
 }
 
 export interface ProductListResponse {

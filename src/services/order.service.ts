@@ -8,6 +8,7 @@ export type CreateOrderInput = {
   addressId?: string;
   deliveryMethod?: DeliveryMethod;
   paymentMethod?: PaymentMethod;
+  couponCode?: string;
 };
 
 export type OrderItem = {
@@ -40,7 +41,46 @@ export type Order = {
   order_items: OrderItem[];
 };
 
+export type OrderListMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type OrderListQuery = {
+  page?: number;
+  limit?: number;
+  status?: string;
+};
+
+export type OrderListResponse = {
+  items: Order[];
+  meta: OrderListMeta;
+};
+
+export type OrderPreview = {
+  subtotal: number;
+  shippingFee: number;
+  tax: number;
+  discount: number;
+  total: number;
+};
+
+export type CouponValidation = {
+  valid: boolean;
+  discountAmount: number;
+  message: string;
+};
+
 export const orderService = {
   createSummary: (input: CreateOrderInput) =>
     api.post<Order>("/orders/summary", input),
+  list: (query: OrderListQuery = {}) =>
+    api.get<OrderListResponse>("/orders", query),
+  getById: (id: string) => api.get<Order>(`/orders/${id}`),
+  preview: (input: CreateOrderInput) =>
+    api.post<OrderPreview>("/orders/preview", input),
+  validateCoupon: (code: string, subtotal: number) =>
+    api.post<CouponValidation>("/orders/validate-coupon", { code, subtotal }),
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { staticFilterSections } from "@/components/ui/filter";
-import type { CategoryItem, Product, ProductDetail, ProductListResponse } from "@/interfaces";
+import type { CategoryItem, Product, ProductDetail, ProductListResponse, ProductRating } from "@/interfaces";
 import { categoryService } from "@/services/category.service";
 import { productsService, type ProductSort } from "@/services/products.service";
 
@@ -25,6 +25,7 @@ type BackendProduct = {
   badges?: { name?: string } | null;
   product_images?: { image_url?: string }[];
   product_colors?: BackendProductColor[];
+  rating?: ProductRating;
 };
 
 export const emptyProductListResponse: ProductListResponse = {
@@ -66,6 +67,7 @@ export const normalizeShopProduct = (item: BackendProduct | ProductDetail): Prod
     badge: item.badges?.name ?? undefined,
     category: item.categories?.name ?? "",
     variants: variantImages,
+    rating: item.rating,
   };
 };
 

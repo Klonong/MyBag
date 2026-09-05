@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { User, Shield, Bell, LogOut, Monitor, Smartphone } from "lucide-react";
+import { User, Shield, Bell, LogOut, Monitor } from "lucide-react";
 import { BasePageCenter, LeftAsideLayout } from "@/components/base";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { authService } from "@/services/auth.service";
-import { toast } from "sonner";
+import { useAccountSettings } from "@/hooks/useAccountSettings";
 
 const navItems = [
   { id: "personal", label: "Personal Information", icon: User },
@@ -21,23 +18,35 @@ const navItems = [
 ];
 
 export default function AccountSettingsPage() {
-  const [active, setActive] = useState("personal");
-  const router = useRouter();
-
-  const scrollTo = (id: string) => {
-    setActive(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  async function handleSignOut() {
-    const { error } = await authService.signOut();
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Signed out successfully.");
-      router.push("/login");
-    }
-  }
+  const {
+    active,
+    scrollTo,
+    handleSignOut,
+    name,
+    setName,
+    phone,
+    setPhone,
+    location,
+    setLocation,
+    bio,
+    setBio,
+    avatarUrl,
+    setAvatarUrl,
+    savingProfile,
+    savePersonalInfo,
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    changingPassword,
+    updatePassword,
+    sessions,
+    sessionsLoading,
+    revokingId,
+    revokeSession,
+  } = useAccountSettings();
 
   return (
     <BasePageCenter>
@@ -83,22 +92,32 @@ export default function AccountSettingsPage() {
                 Update your photo and personal details here.
               </p>
             </div>
-            <Button size="sm" className="w-full sm:w-auto">Save Changes</Button>
+            <Button size="sm" className="w-full sm:w-auto" disabled={savingProfile} onClick={() => void savePersonalInfo()}>
+              {savingProfile ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
 
-          <div className="mb-6 md:mb-8">
-            <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-md overflow-hidden border border-secondary mb-2">
+          <div className="mb-6 md:mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+            <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-md overflow-hidden border border-secondary shrink-0">
               <Image
-                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=240&fit=crop&crop=face"
+                src={avatarUrl || "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=240&fit=crop&crop=face"}
                 alt="Profile photo"
                 width={96}
                 height={112}
                 className="object-cover w-full h-full"
+                unoptimized
               />
             </div>
-            <button className="text-xs text-primary underline underline-offset-2 hover:text-tertiary transition-colors">
-              Change Photo
-            </button>
+            <div className="flex-1 flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Photo URL
+              </Label>
+              <Input
+                value={avatarUrl}
+                onChange={(event) => setAvatarUrl(event.target.value)}
+                placeholder="https://..."
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mb-5">
@@ -106,25 +125,19 @@ export default function AccountSettingsPage() {
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Full Name
               </Label>
-              <Input defaultValue="Ana Wijaya" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Email Address
-              </Label>
-              <Input defaultValue="ana.wijaya@estetika.com" type="email" />
+              <Input value={name} onChange={(event) => setName(event.target.value)} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Phone Number
               </Label>
-              <Input defaultValue="+62 872-3456-7890" type="tel" />
+              <Input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Location
               </Label>
-              <Input defaultValue="Jakarta, Indonesia" />
+              <Input value={location} onChange={(event) => setLocation(event.target.value)} />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -132,7 +145,8 @@ export default function AccountSettingsPage() {
               Bio / Craft Preference
             </Label>
             <Textarea
-              defaultValue="Enthusiast of Javanese textile traditions and contemporary minimalist architecture. Always seeking pieces with a story."
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
               rows={3}
             />
           </div>
@@ -155,32 +169,41 @@ export default function AccountSettingsPage() {
                 Recent Activity
               </p>
               <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-secondary/60 bg-card">
-                  <Monitor
-                    className="w-5 h-5 text-muted-foreground shrink-0"
-                    strokeWidth={1.5}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-primary">
-                      MacBook Pro · Jakarta
-                    </p>
-                    <p className="text-xs font-medium text-green-600">
-                      Active Now
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-secondary/60 bg-card">
-                  <Smartphone
-                    className="w-5 h-5 text-muted-foreground shrink-0"
-                    strokeWidth={1.5}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-primary">
-                      iPhone 15 · Ubud
-                    </p>
-                    <p className="text-xs text-muted-foreground">3 days ago</p>
-                  </div>
-                </div>
+                {sessionsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading sessions...</p>
+                ) : sessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No active sessions.</p>
+                ) : (
+                  sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-lg border border-secondary/60 bg-card"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Monitor className="w-5 h-5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                        <div>
+                          <p className="text-sm font-medium text-primary">
+                            {session.userAgent ?? "Unknown device"}
+                            {session.ip ? ` · ${session.ip}` : ""}
+                          </p>
+                          <p className={cn("text-xs", session.current ? "font-medium text-green-600" : "text-muted-foreground")}>
+                            {session.current ? "Active Now" : new Date(session.lastSeenAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      {!session.current && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={revokingId === session.id}
+                          onClick={() => void revokeSession(session.id)}
+                        >
+                          Sign out
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -189,24 +212,43 @@ export default function AccountSettingsPage() {
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Current Password
                 </Label>
-                <Input type="password" defaultValue="password" />
+                <Input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     New Password
                   </Label>
-                  <Input type="password" placeholder="Enter new password" />
+                  <Input
+                    type="password"
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Confirm New Password
                   </Label>
-                  <Input type="password" placeholder="Confirm new password" />
+                  <Input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                  />
                 </div>
               </div>
-              <Button variant="outline" className="self-start">
-                Update Password
+              <Button
+                variant="outline"
+                className="self-start"
+                disabled={changingPassword}
+                onClick={() => void updatePassword()}
+              >
+                {changingPassword ? "Updating..." : "Update Password"}
               </Button>
             </div>
           </div>
